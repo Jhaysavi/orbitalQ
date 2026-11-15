@@ -1,12 +1,17 @@
 import io
 import json
 import csv
+from base64 import b64decode
+from html import escape
 from pathlib import Path
+from string import Template
+from struct import unpack
 import aiohttp
 import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
+import streamlit.components.v1 as components
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.wcs import WCS
@@ -387,8 +392,106 @@ def observation_csv(frames, target_name, ra, dec, selected_index=None, compariso
     return output.getvalue()
 
 
+def show_observation_interval(date_a, mjd_a, date_b, mjd_b):
+    """Show timestamps and the actual interval for the selected pair."""
+    duration = "Unavailable"
+    if np.isfinite(mjd_a) and np.isfinite(mjd_b):
+        days = abs(mjd_b - mjd_a)
+        if days >= 1:
+            duration = f"{days:.2f} days"
+        elif days >= 1 / 24:
+            duration = f"{days * 24:.2f} hours"
+        elif days >= 1 / 1440:
+            duration = f"{days * 1440:.1f} min"
+        else:
+            duration = f"{days * 86400:.1f} sec"
+    st.markdown(
+        '<dl class="oq-interval">'
+        f'<div><dt>Observation A</dt><dd>{escape(date_a or "Date unavailable")}</dd></div>'
+        f'<div><dt>Time between visits</dt><dd>{duration}</dd></div>'
+        f'<div><dt>Observation B</dt><dd>{escape(date_b or "Date unavailable")}</dd></div>'
+        '</dl>',
+        unsafe_allow_html=True,
+    )
+
+
+@st.cache_data(show_spinner=False)
+def read_packaged_observations():
+    """Read the same genuine SPHEREx cutouts shipped with the static viewer."""
+    root = Path(__file__).resolve().parent
+    html = (root / "dist" / "index.html").read_text(encoding="utf-8")
+    start = '<script id="case-data" type="application/json">'
+    _, found, block = html.partition(start)
+    if not found:
+        return []
+    return json.loads(block.split("</script>", 1)[0])
+
+
+def show_packaged_examples():
+    st.subheader("Compare real observations across months")
+    st.caption(
+        "These SPHEREx cutouts are already included with OrbitalQ. "
+        "Choose two visits and drag the divider or play Auto-Blink."
+    )
+    try:
+        cases = {case["name"]: case for case in read_packaged_observations()
+                 if len(case.get("frames", [])) >= 2}
+    except (OSError, ValueError) as exc:
+        st.error(f"Could not open the packaged SPHEREx observations: {exc}")
+        return
+    if not cases:
+        st.info("No packaged examples are available. Load FITS files in Compare Level 2 visits.")
+        return
+
+    name = st.selectbox("Example target", list(cases))
+    case = cases[name]
+    frames = sorted(case["frames"], key=lambda item: item["mjd"])
+    first_slot, second_slot = st.columns(2)
+    first_index = first_slot.selectbox(
+        "First visit", range(len(frames) - 1), format_func=lambda i: frames[i]["date"],
+        key=f"example_first_{case['key']}",
+    )
+    later_options = [i for i in range(first_index + 1, len(frames))
+                     if frames[i]["mjd"] > frames[first_index]["mjd"]]
+    if not later_options:
+        st.info("This visit has no later timestamp in the packaged sequence.")
+        return
+    second_index = second_slot.selectbox(
+        "Later visit", later_options, index=len(later_options) - 1,
+        format_func=lambda i: frames[i]["date"], key=f"example_second_{case['key']}",
+    )
+    first, second = frames[first_index], frames[second_index]
+    show_observation_interval(first["date"], first["mjd"], second["date"], second["mjd"])
+    image_a = first["image"].removeprefix("data:image/png;base64,")
+    image_b = second["image"].removeprefix("data:image/png;base64,")
+    width, height = unpack(">II", b64decode(image_a[:32])[16:24])
+    template = Path(__file__).resolve().parent / "ui" / "swipe.html"
+    components.html(
+        Template(template.read_text(encoding="utf-8")).substitute(
+            width=width, height=height, max_width=f"{360 * width / height:.2f}",
+            label_a="Earlier", label_b="Later",
+            date_a=escape(first["date"]), date_b=escape(second["date"]),
+            image_a=image_a, image_b=image_b,
+        ),
+        height=485,
+    )
+    st.caption(
+        f"Detector: {case['detector']}. Use nearby stars as visual references. "
+        "A visible shift is a starting point for investigation."
+    )
+    left, right = st.columns(2)
+    left.link_button("Earlier FITS source", first["fits"])
+    right.link_button("Later FITS source", second["fits"])
+    if case.get("snapshot"):
+        st.markdown(f"[Processed cutout provenance]({case['snapshot']})")
+
+
+def open_packaged_examples():
+    st.session_state["explorer_view"] = "Ready-to-view examples"
+
+
 view = st.radio(
-    "Explorer view", ["Real DR1 sky preview", "Compare Level 2 visits", "About OrbitalQ"],
+    "Explorer view", ["Real DR1 sky preview", "Compare Level 2 visits", "Ready-to-view examples", "About OrbitalQ"],
     horizontal=True,
     key="explorer_view",
 )
@@ -502,7 +605,11 @@ if view == "Real DR1 sky preview":
             "to download the entire 306 MB tile."
         )
 
+elif view == "Ready-to-view examples":
+    show_packaged_examples()
+
 elif view == "Compare Level 2 visits":
+    st.button("See Barnard’s Star and WISE 0855 across months", on_click=open_packaged_examples)
     with st.container(border=True):
         demo_copy, demo_action = st.columns([2, 1])
         with demo_copy:
@@ -852,7 +959,7 @@ elif view == "Compare Level 2 visits":
                             )
                         )
                 if len(frames) > 1:
-                    with st.expander("Observation timeline"):
+                    with st.expander("Observation timeline", expanded=True):
                         st.dataframe(
                             [{
                                 "date_obs": f.date_obs, "mjd_obs": f.mjd_obs,
@@ -875,13 +982,9 @@ elif view == "Compare Level 2 visits":
                         if warning:
                             st.warning(f"Visual comparison only: {warning}. Check the metadata before interpreting changes.")
                         first, second = (frames[index] for index in sorted((selected, compare_index)))
-                        if np.isfinite(first.mjd_obs) and np.isfinite(second.mjd_obs):
-                            elapsed_days = abs(second.mjd_obs - first.mjd_obs)
-                            elapsed = (
-                                f"{elapsed_days:.2f} days" if elapsed_days >= 1
-                                else f"{elapsed_days * 1440:.1f} minutes"
-                            )
-                            st.caption(f"Time between observations: {elapsed}")
+                        show_observation_interval(
+                            first.date_obs, first.mjd_obs, second.date_obs, second.mjd_obs,
+                        )
                         matching_units = (
                             first.bunit == second.bunit
                             and first.bunit.strip().lower() not in {"", "unknown"}

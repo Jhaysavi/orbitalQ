@@ -145,3 +145,17 @@
 @media (max-width: 760px) {
     .oq-about-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+.oq-interval {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .65rem; margin: .2rem 0 .65rem;
+}
+.oq-interval > div {
+    padding: .65rem .8rem; border: 1px solid var(--oq-border);
+    border-radius: 11px; background: var(--oq-panel);
+}
+.oq-interval > div:first-child { color: var(--oq-cyan); }
+.oq-interval > div:last-child { color: var(--oq-amber); }
+.oq-interval dt { color: var(--oq-muted); font-size: .78rem; }
+.oq-interval dd { margin: .25rem 0 0; overflow-wrap: anywhere; font: 600 .86rem/1.4 ui-monospace, monospace; }
+@media (max-width: 600px) { .oq-interval { grid-template-columns: 1fr; } }

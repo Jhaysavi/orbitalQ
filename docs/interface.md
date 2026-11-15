@@ -17,3 +17,7 @@ The root [HTML prototype](../viewer.html) uses illustrative observations for des
 ### External study resources
 
 The WISE 0855 study links to a [Pan-STARRS optical cutout](https://ps1images.stsci.edu/cgi-bin/ps1cutouts?pos=133.786245+-7.244372&filter=color&filter=g&filter=r&filter=i&filter=z&filter=y&filetypes=stack&auxiliary=data&size=240&output_size=0&verbose=0&autoscale=99.500000&catlist=) from STScI and to [WiseView](https://byw.tools/wiseview) from Backyard Worlds. In WiseView, enter RA `133.786245` and Dec `-7.244372` to examine the reference field. These external views provide context for the SPHEREx observations. The app keeps data from each survey separate.
+
+### Ready-to-view examples
+
+The Streamlit navigation includes **Ready-to-view examples**. It reads the packaged Barnard’s Star and WISE 0855 cutouts from the repository, then shows their visit dates, elapsed time, Swipe and Auto-Blink controls, and FITS provenance. Comparing the packaged visits requires no remote FITS download. The example renderer and the observation interval are implemented directly in `app.py`.
