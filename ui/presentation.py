@@ -11,6 +11,8 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 UI_DIR = Path(__file__).resolve().parent
+LOGO_PATH = UI_DIR.parent / "orbitalq-logo.png"
+FAVICON_PATH = UI_DIR.parent / "favicon.png"
 HERO_FITS = "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/1/level2_2025W35_1A_0432_4D1_spx_l2b-v27-2026-230.fits"
 HERO_SOURCE = "https://github.com/ayoubna99/spherex-skyshift/blob/170e23075e88f27b10d1a1092c4147644386f6bf/frontend/static/frames_barnard.json"
 
@@ -22,17 +24,21 @@ def read_assets():
         (UI_DIR / "explorer.css").read_text(encoding="utf-8"),
         b64encode((UI_DIR / "barnard-dr1.png").read_bytes()).decode("ascii"),
         (UI_DIR / "swipe.html").read_text(encoding="utf-8"),
+        b64encode(LOGO_PATH.read_bytes()).decode("ascii"),
     )
 
 
 def render_header():
-    css, preview, _ = read_assets()
+    css, preview, _, logo = read_assets()
     st.markdown(f"""
 <style>{css}</style>
 <header class="oq-hero">
   <div class="oq-intro">
     <div class="oq-mission">SPHEREx data explorer <span aria-hidden="true">/</span> NASA Space Apps 2026</div>
-    <h1>Orbital<span>Q</span></h1>
+    <div class="oq-brand">
+      <img src="data:image/png;base64,{logo}" width="72" height="72" alt="">
+      <h1>Orbital<span>Q</span></h1>
+    </div>
     <p class="oq-headline">See what changes in the infrared sky.</p>
     <p class="oq-description">Explore real observations, then compare two visits to the same region of the sky.</p>
   </div>
@@ -60,14 +66,14 @@ def _encode_cutout(data, limits):
 
 def display_swipe(first, second, stretch_limits):
     """Overlay equal-sized native cutouts with a browser-side divider."""
-    _, _, markup = read_assets()
+    _, _, markup, _ = read_assets()
     height, width = first.image.shape
     chronological = first.mjd_obs < second.mjd_obs
     components.html(
         Template(markup).substitute(
             width=width,
             height=height,
-            max_width=f"{390 * width / height:.2f}",
+            max_width=f"{360 * width / height:.2f}",
             label_a="Earlier" if chronological else "Observation A",
             label_b="Later" if chronological else "Observation B",
             date_a=escape(first.date_obs or "Date unavailable"),

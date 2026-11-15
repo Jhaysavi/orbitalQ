@@ -20,9 +20,13 @@ from core.coordinates import is_inside_image, pixel_scale_arcsec, world_to_pixel
 from core.fits_reader import read_level2
 from core.provenance import report_text
 from core.validation import chronological, comparison_warning
-from ui.presentation import display_swipe, render_header
+from ui.presentation import FAVICON_PATH, display_swipe, render_header
 
-st.set_page_config(page_title="OrbitalQ | SPHEREx Explorer", page_icon="🌌", layout="wide")
+st.set_page_config(
+    page_title="OrbitalQ | SPHEREx Explorer",
+    page_icon=str(FAVICON_PATH),
+    layout="wide",
+)
 
 render_header()
 
@@ -370,15 +374,15 @@ def observation_csv(frames, target_name, ra, dec, selected_index=None, compariso
 
 
 view = st.radio(
-    "Explorer view", ["Compare Level 2 visits", "DR1 sky preview", "About OrbitalQ"],
+    "Explorer view", ["Real DR1 sky preview", "Compare Level 2 visits", "About OrbitalQ"],
     horizontal=True,
 )
 
-if view == "DR1 sky preview":
+if view == "Real DR1 sky preview":
     st.subheader("SPHEREx DR1 All-Sky Cube")
     st.info(
         "This is a real SPHEREx DR1 product. Its 102 planes are wavelength channels, "
-        "not observation dates. Use the second tab for a sequence of separate Level 2 visits."
+        "Use Compare Level 2 visits to explore separate observations by date."
     )
     channel_labels, channel_error = cube_channel_labels()
     if channel_error:
@@ -855,6 +859,13 @@ elif view == "Compare Level 2 visits":
                         if warning:
                             st.warning(f"Visual comparison only: {warning}. Check the metadata before interpreting changes.")
                         first, second = (frames[index] for index in sorted((selected, compare_index)))
+                        if np.isfinite(first.mjd_obs) and np.isfinite(second.mjd_obs):
+                            elapsed_days = abs(second.mjd_obs - first.mjd_obs)
+                            elapsed = (
+                                f"{elapsed_days:.2f} days" if elapsed_days >= 1
+                                else f"{elapsed_days * 1440:.1f} minutes"
+                            )
+                            st.caption(f"Time between observations: {elapsed}")
                         matching_units = (
                             first.bunit == second.bunit
                             and first.bunit.strip().lower() not in {"", "unknown"}

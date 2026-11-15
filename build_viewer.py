@@ -4,6 +4,7 @@ import argparse
 import base64
 import io
 import json
+import re
 import math
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -148,10 +149,19 @@ def main():
     except (KeyError, TypeError, ValueError, OSError) as error:
         parser.error(str(error))
     payload = json.dumps(cases, ensure_ascii=True, allow_nan=False).replace("<", r"\u003c")
-    template = (ROOT / "viewer.html").read_text(encoding="utf-8")
+    template = (ROOT / "dist" / "index.html").read_text(encoding="utf-8")
+    page, replacements = re.subn(
+        r'(<script id="case-data" type="application/json">).*?(</script>)',
+        lambda match: match[1] + payload + match[2],
+        template,
+        count=1,
+        flags=re.DOTALL,
+    )
+    if replacements != 1:
+        parser.error("The static viewer is missing its case-data script.")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     temporary = args.output.with_suffix(args.output.suffix + ".tmp")
-    temporary.write_text(template.replace("<!-- CASE_DATA -->", payload, 1), encoding="utf-8")
+    temporary.write_text(page, encoding="utf-8")
     temporary.replace(args.output)
     print(f"Viewer generated: {args.output.resolve()}")
 

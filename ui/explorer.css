@@ -100,3 +100,7 @@
     .oq-hero { grid-template-columns: minmax(0, 1fr); }
     .oq-hero-image img { height: clamp(6rem, 20vw, 10rem); }
 }
+
+.oq-brand { display: flex; align-items: center; gap: .65rem; min-width: 0; margin: .5rem 0 .85rem; }
+.oq-brand img { width: clamp(48px, 8vw, 80px); height: auto; flex: none; }
+.oq-brand h1 { margin: 0; font-size: clamp(2.1rem, 5.5vw, 5.2rem); }
