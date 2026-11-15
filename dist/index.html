@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Compare real NASA SPHEREx infrared observations, inspect catalog predictions, and open the original FITS files.">
-<title>Orbital Eye · SPHEREx Observation Explorer</title>
+<title>orbitalQ · SPHEREx Observation Explorer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -87,17 +87,46 @@ kbd{border:1px solid #4a5c6e;border-radius:.25rem;padding:.02rem .28rem;font-fam
 #guide-step{color:var(--accent)}
 #swipe-mode[aria-pressed=true]{border-color:var(--teal)}
 @media(max-width:560px){#reveal{flex-basis:100%}.toolbar button{font-size:.82rem;padding-inline:.45rem}}
+:root{--accent:#ffbd63;--teal:#80e8f7;--panel:#101927;--line:#293b50;background:#080d18}
+.site-header{position:relative;overflow:hidden;background:radial-gradient(ellipse at 13% 0%,#12495688,transparent 55%),radial-gradient(ellipse at 80% 100%,#5c382a75,transparent 58%),#0b1423}
+.site-header::before,.site-header::after{content:"";position:absolute;pointer-events:none;width:58%;height:110px;right:2%;top:-85px;border-radius:50%;border-bottom:2px solid #69e6f3;box-shadow:0 8px 21px #4ad9f580;transform:rotate(-6deg)}
+.site-header::after{right:-7%;top:1px;border:0;border-top:2px solid #ffaa5c;box-shadow:0 -7px 20px #ff954966;transform:rotate(7deg)}
+.masthead{position:relative;z-index:1;min-height:74px}
+.brand{font-size:clamp(1.45rem,3vw,2rem);gap:.8rem}
+.brand-mark{position:relative;width:32px;height:32px;border-color:var(--teal);box-shadow:0 0 16px #6aeaf766,inset 0 0 10px #6aeaf755}
+.brand-mark::before{content:"";position:absolute;inset:8px -5px;border:1px solid var(--accent);border-radius:50%;transform:rotate(-35deg)}
+.brand-mark::after{background:var(--accent);box-shadow:0 0 9px var(--accent)}
+.brand-copy{display:grid;line-height:1.02}
+.brand-copy small{font-size:.67rem;color:var(--muted);font-weight:500;letter-spacing:0;margin-top:.35rem}
+.intro h1 em{font-style:normal;color:var(--accent)}
+.workspace-grid{grid-template-columns:minmax(0,1fr) minmax(15rem,19rem)}
+.comparison{background:linear-gradient(145deg,#122332,#0d1623 54%);padding:clamp(.65rem,1.7vw,1.1rem)}
+.toolbar button{border-radius:999px}
+.toolbar button[aria-pressed=true]{border-color:var(--teal);color:var(--teal);box-shadow:inset 0 0 11px #62dcea32,0 0 11px #62dcea30}
+#blink{background:#182636;color:#edf2f7;border-color:#3e5268}
+#blink:hover{background:#23364a;color:#edf2f7}
+#blink[aria-pressed=true]{border-color:var(--teal);color:var(--teal)}
+#reveal,#reveal[aria-pressed=true]{background:#342719;color:var(--accent);border-color:var(--accent);box-shadow:0 0 12px #ffae4355}
+#reveal:hover{background:#48341d}
+#panels[data-layout=swipe]{width:min(100%,720px);border:1px solid #43566b;border-radius:10px;overflow:hidden;cursor:ew-resize;touch-action:pan-y;isolation:isolate}
+.swipe-rule{box-shadow:0 0 8px 2px #ffb85477;z-index:1}
+.stage-dates{position:absolute;inset:.6rem .55rem auto;display:flex;justify-content:space-between;gap:.35rem;pointer-events:none;z-index:2;font:500 clamp(.62rem,1.4vw,.85rem)/1.4 var(--mono)}
+.stage-dates span{padding:.28rem .45rem;background:#07101bea;border-radius:6px;color:var(--teal)}
+.stage-dates span:last-child{color:var(--accent)}
+#swipe{height:30px}
+@media(max-width:930px){.workspace-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:560px){.masthead{min-height:66px}.brand-copy small{max-width:21ch}.toolbar button{font-size:.76rem}}
 </style>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header"><div class="shell masthead">
-<span class="brand"><span class="brand-mark" aria-hidden="true"></span>Orbital Eye</span>
-<span class="mission">NASA Space Apps · SPHEREx</span>
+<span class="brand"><span class="brand-mark" aria-hidden="true"></span><span class="brand-copy">orbitalQ<small>Explore the infrared sky.</small></span></span>
+<span class="mission">NASA Space Apps 2026</span>
 </div></header>
 <main id="main" class="shell">
 <div class="intro">
-<h1>Which point moved?</h1>
+<h1>Which point <em>moved?</em></h1>
 <p>Compare real SPHEREx infrared observations of the same sky field across dates.</p>
 </div>
 <p id="empty" hidden>No observations have been packaged yet. Follow the repository README to generate a viewer from NASA/IPAC IRSA cutouts.</p>
@@ -112,7 +141,7 @@ kbd{border:1px solid #4a5c6e;border-radius:.25rem;padding:.02rem .28rem;font-fam
 </fieldset></details>
 <div class="toolbar">
 <button id="swipe-mode" type="button" aria-pressed="true">Swipe</button>
-<button id="blink" type="button">Blink</button>
+<button id="blink" type="button" aria-pressed="false">Auto-Blink A/B</button>
 <button id="layout" type="button" aria-pressed="false">Side by side</button>
 <button id="reveal" type="button" aria-pressed="false">Reveal expected position</button><input id="overlay" type="checkbox" hidden>
 </div>
@@ -128,10 +157,10 @@ kbd{border:1px solid #4a5c6e;border-radius:.25rem;padding:.02rem .28rem;font-fam
 <aside class="sidebar" aria-label="Guide and observation evidence">
 <section class="card" aria-labelledby="guide-title">
 <h2 id="guide-title">How to compare</h2>
-<p>Drag the slider to compare two observations. Look for a point that shifts relative to nearby stars.</p>
+<p>Drag the amber line across the image to compare two dates. Look for a point that shifts relative to nearby stars.</p>
 <p id="guide-step" class="muted">Then reveal the expected position.</p>
 <p id="case-description" class="muted"></p>
-<p class="muted">Use the arrow keys on the slider. <kbd>Space</kbd> switches dates in Blink mode. <kbd>R</kbd> toggles the overlay.</p>
+<p class="muted">The slider below the image also works with arrow keys. <kbd>Space</kbd> switches dates in Blink mode. <kbd>R</kbd> toggles the overlay.</p>
 </section>
 <section id="evidence" class="card" aria-labelledby="evidence-title">
 <h2 id="evidence-title">Pair evidence</h2>
@@ -168,6 +197,8 @@ const raw = byId("case-data").textContent.trim();
 const cases = raw.startsWith("[") ? JSON.parse(raw) : [];
 let activeFrame = "first";
 let comparisonMode = "swipe";
+let blinkTimer = null;
+let dragPointer = null;
 function pairEvidence() {
     const item = cases[Number(ui.target.value)];
     const first = item.frames[Number(ui.first.value)];
@@ -234,7 +265,8 @@ function initializeEvidence() {
             event.target.closest("input, select, textarea, button, a, [contenteditable]")) return;
         if (event.code === "Space" && comparisonMode === "blink") {
             event.preventDefault();
-            ui.blink.click();
+            activeFrame = activeFrame === "first" ? "later" : "first";
+            render();
         }
         if (event.key.toLowerCase() === "r") {
             ui.overlay.checked = !ui.overlay.checked;
@@ -295,7 +327,14 @@ function render() {
         const rule = document.createElement("div");
         rule.className = "swipe-rule";
         rule.setAttribute("aria-hidden", "true");
-        ui.panels.append(rule);
+        const dates = document.createElement("div");
+        dates.className = "stage-dates";
+        const earlierLabel = document.createElement("span");
+        const laterLabel = document.createElement("span");
+        earlierLabel.textContent = "Earlier · " + earlier.date.slice(0, 10);
+        laterLabel.textContent = "Later · " + later.date.slice(0, 10);
+        dates.append(earlierLabel, laterLabel);
+        ui.panels.append(rule, dates);
     }
     const swipe = byId("swipe");
     ui.panels.style.setProperty("--swipe", swipe.value + "%");
@@ -307,8 +346,8 @@ function render() {
     byId("case-summary").textContent = current.name + " · Change target or dates";
     byId("swipe-mode").setAttribute("aria-pressed", String(swiping));
     ui.layout.setAttribute("aria-pressed", String(sideBySide));
-    ui.blink.textContent = comparisonMode === "blink"
-        ? (activeFrame === "first" ? "Show later date" : "Show earlier date") : "Blink";
+    ui.blink.setAttribute("aria-pressed", String(Boolean(blinkTimer)));
+    ui.blink.textContent = blinkTimer ? "Pause A/B" : "Auto-Blink A/B";
     byId("reveal").setAttribute("aria-pressed", String(ui.overlay.checked));
     byId("reveal").textContent = ui.overlay.checked ? "Hide expected position" : "Reveal expected position";
     byId("guide-step").textContent = ui.overlay.checked
@@ -353,6 +392,29 @@ if (cases.length) {
     ui.first.addEventListener("change", selectEarlier);
     ui.second.addEventListener("change", render);
     ui.overlay.addEventListener("change", render);
+    const updateDivider = event => {
+        const rect = ui.panels.getBoundingClientRect();
+        if (!rect.width) return;
+        const value = Math.round(Math.max(0, Math.min(100, (event.clientX - rect.left) / rect.width * 100)));
+        byId("swipe").value = value;
+        ui.panels.style.setProperty("--swipe", value + "%");
+    };
+    ui.panels.addEventListener("pointerdown", event => {
+        if (comparisonMode !== "swipe" || !event.isPrimary || event.button !== 0) return;
+        dragPointer = event.pointerId;
+        ui.panels.setPointerCapture(dragPointer);
+        updateDivider(event);
+    });
+    ui.panels.addEventListener("pointermove", event => {
+        if (comparisonMode === "swipe" && event.pointerId === dragPointer) updateDivider(event);
+    });
+    ui.panels.addEventListener("lostpointercapture", () => { dragPointer = null; });
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden && blinkTimer) {
+            stopBlink();
+            render();
+        }
+    });
     byId("swipe").addEventListener("input", event => {
         ui.panels.style.setProperty("--swipe", event.target.value + "%");
     });
@@ -361,15 +423,29 @@ if (cases.length) {
         render();
     });
     byId("swipe-mode").addEventListener("click", () => {
+        stopBlink();
         comparisonMode = "swipe";
         render();
     });
+    function stopBlink() {
+        clearInterval(blinkTimer);
+        blinkTimer = null;
+    }
     ui.blink.addEventListener("click", () => {
-        activeFrame = comparisonMode === "blink" && activeFrame === "later" ? "first" : "later";
         comparisonMode = "blink";
+        if (blinkTimer) {
+            stopBlink();
+        } else {
+            activeFrame = activeFrame === "first" ? "later" : "first";
+            blinkTimer = setInterval(() => {
+                activeFrame = activeFrame === "first" ? "later" : "first";
+                render();
+            }, 1000);
+        }
         render();
     });
     ui.layout.addEventListener("click", () => {
+        stopBlink();
         comparisonMode = comparisonMode === "split" ? "swipe" : "split";
         render();
     });
