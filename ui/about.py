@@ -4,6 +4,39 @@ import streamlit as st
 
 REPO = "https://github.com/SouBeatrizKaroline/NasaSpaceApp_OrbitalQ"
 
+WISE_FIELD = "133.786245 -7.244372"
+PANSTARRS_CUTOUT = (
+    "https://ps1images.stsci.edu/cgi-bin/ps1cutouts?pos=133.786245+-7.244372"
+    "&filter=color&filter=g&filter=r&filter=i&filter=z&filter=y"
+    "&filetypes=stack&auxiliary=data&size=240&output_size=0&verbose=0"
+    "&autoscale=99.500000&catlist="
+)
+WISEVIEW = "https://byw.tools/wiseview"
+
+
+def render_wise_field_resources():
+    """Link to independent survey views for the WISE 0855 study field."""
+    with st.expander("Explore the WISE 0855 field in other surveys"):
+        st.markdown(
+            f"**Reference field:** RA and Dec in degrees: `{WISE_FIELD}`. "
+            "These links open external survey tools."
+        )
+        optical, infrared = st.columns(2)
+        with optical:
+            st.link_button("Open Pan-STARRS cutout", PANSTARRS_CUTOUT, use_container_width=True)
+            st.caption("Inspect the optical stack and individual filters from the STScI archive.")
+        with infrared:
+            st.link_button("Open WiseView", WISEVIEW, use_container_width=True)
+            st.caption("Enter the reference coordinates above to explore infrared images across WISE epochs.")
+        st.info(
+            "Start with surrounding stars as reference points. Wavelength, observing epoch "
+            "and image resolution can change a source’s appearance across surveys."
+        )
+        st.markdown(
+            "[Pan-STARRS service guide](https://outerspace.stsci.edu/pages/viewpage.action?pageId=398524447) · "
+            "[WiseView documentation](https://github.com/backyardworlds/wiseview)"
+        )
+
 
 def open_view(view, action=None):
     st.session_state["explorer_view"] = view
@@ -45,6 +78,7 @@ def render_about(load_example):
   </div>
 </section>
 """, unsafe_allow_html=True)
+    render_wise_field_resources()
     with st.expander("Using your own files"):
         st.markdown(
             "Set a sky position in **Target coordinates**, then open **Compare Level 2 visits**. "

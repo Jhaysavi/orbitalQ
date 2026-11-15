@@ -20,7 +20,7 @@ from core.coordinates import is_inside_image, pixel_scale_arcsec, world_to_pixel
 from core.fits_reader import read_level2
 from core.provenance import report_text
 from core.validation import chronological, comparison_warning
-from ui.about import render_about
+from ui.about import render_about, render_wise_field_resources
 from ui.presentation import FAVICON_PATH, display_swipe, render_header
 
 st.set_page_config(
@@ -382,6 +382,7 @@ view = st.radio(
 
 if view == "Real DR1 sky preview":
     st.subheader("SPHEREx DR1 All-Sky Cube")
+    render_wise_field_resources()
     st.info(
         "This is a real SPHEREx DR1 product. Its 102 planes are wavelength channels, "
         "Use Compare Level 2 visits to explore separate observations by date."

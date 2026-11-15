@@ -13,3 +13,7 @@ Presentation code and assets are in [`ui/`](../ui/). [`app.py`](../app.py) handl
 The root [HTML prototype](../viewer.html) uses illustrative observations for design exploration. The [static viewer](../dist/index.html) packages real observations in its case-data script. The builder replaces that script with data from validated FITS manifests.
 
 **About OrbitalQ** includes a public getting-started guide, two exercises, and team links. The guide can open the spectral preview or load the built-in pair directly in the Level 2 workspace. See [`ui/about.py`](../ui/about.py) for its content.
+
+### External study resources
+
+The WISE 0855 study links to a [Pan-STARRS optical cutout](https://ps1images.stsci.edu/cgi-bin/ps1cutouts?pos=133.786245+-7.244372&filter=color&filter=g&filter=r&filter=i&filter=z&filter=y&filetypes=stack&auxiliary=data&size=240&output_size=0&verbose=0&autoscale=99.500000&catlist=) from STScI and to [WiseView](https://byw.tools/wiseview) from Backyard Worlds. In WiseView, enter RA `133.786245` and Dec `-7.244372` to examine the reference field. These external views provide context for the SPHEREx observations. The app keeps data from each survey separate.
