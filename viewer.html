@@ -68,6 +68,25 @@ kbd{border:1px solid #4a5c6e;border-radius:.25rem;padding:.02rem .28rem;font-fam
 #empty{padding:1rem;border:1px solid var(--line);border-radius:8px}
 @media(max-width:930px){.workspace-grid{grid-template-columns:minmax(0,1fr)}.sidebar{grid-template-columns:repeat(2,minmax(0,1fr))}.sources{grid-column:1/-1}}
 @media(max-width:560px){.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.controls label:first-child{grid-column:1/-1}.sidebar{grid-template-columns:minmax(0,1fr)}.mission{max-width:15ch}.toolbar{gap:.4rem}.toolbar button{flex:1}.toggle{flex:auto}figcaption{padding:.45rem}#panels[data-layout=split] figure{border-radius:5px}}
+.case-options{border-bottom:1px solid var(--line);padding:.4rem 0 .75rem}
+.case-options summary{color:var(--teal);cursor:pointer}
+.case-options fieldset{margin-top:.6rem}
+#panel-controls{display:grid;gap:.5rem;margin:.65rem 0}
+#panel-controls label{display:flex;justify-content:space-between;gap:1rem;font:400 .78rem/1.4 var(--mono);color:var(--muted)}
+#swipe{width:100%;height:32px;margin:0;accent-color:var(--accent);cursor:ew-resize;touch-action:pan-y}
+#pair-fits{display:flex;gap:1rem;flex-wrap:wrap;font-size:.82rem}
+#panels[data-layout=swipe]{position:relative;width:min(100%,620px);margin:auto;display:grid;--swipe:50%}
+#panels[data-layout=swipe] figure{grid-area:1/1;border:0;border-radius:8px}
+#panels[data-layout=swipe] figure:last-of-type{clip-path:inset(0 0 0 var(--swipe))}
+#panels[data-layout=swipe] .exposure{width:100%}
+#panels[data-layout=swipe] figcaption{display:none}
+.swipe-rule{position:absolute;pointer-events:none;left:var(--swipe);top:0;bottom:0;width:2px;background:var(--accent);transform:translateX(-50%);box-shadow:0 0 9px #ffc87a88}
+.swipe-rule::after{content:"↔";display:grid;place-items:center;position:absolute;top:50%;left:50%;width:2rem;height:2rem;border:1px solid var(--accent);border-radius:50%;background:#15191f;color:var(--accent);transform:translate(-50%,-50%)}
+#reveal{color:#21170c;background:var(--accent);border-color:var(--accent)}
+#reveal:hover{background:#ffdaaa}
+#guide-step{color:var(--accent)}
+#swipe-mode[aria-pressed=true]{border-color:var(--teal)}
+@media(max-width:560px){#reveal{flex-basis:100%}.toolbar button{font-size:.82rem;padding-inline:.45rem}}
 </style>
 </head>
 <body>
@@ -85,26 +104,34 @@ kbd{border:1px solid #4a5c6e;border-radius:.25rem;padding:.02rem .28rem;font-fam
 <section id="workspace" hidden aria-label="Observation comparison">
 <div class="workspace-grid">
 <section class="card comparison" aria-label="Image comparison">
+<details class="case-options"><summary id="case-summary">Choose a target or dates</summary>
 <fieldset class="controls" aria-label="Target and observation dates">
 <label>Target <select id="target"></select></label>
 <label>Earlier observation <select id="first"></select></label>
 <label>Later observation <select id="second"></select></label>
-</fieldset>
+</fieldset></details>
 <div class="toolbar">
-<button id="blink" type="button">Switch date</button>
+<button id="swipe-mode" type="button" aria-pressed="true">Swipe</button>
+<button id="blink" type="button">Blink</button>
 <button id="layout" type="button" aria-pressed="false">Side by side</button>
-<label class="toggle"><input id="overlay" type="checkbox"> Show expected position</label>
+<button id="reveal" type="button" aria-pressed="false">Reveal expected position</button><input id="overlay" type="checkbox" hidden>
 </div>
 <p id="frame-status" role="status"></p>
 <div id="panels"></div>
+<div id="panel-controls" hidden>
+<label for="swipe"><span id="earlier-date">Earlier</span><span id="later-date">Later</span></label>
+<input id="swipe" type="range" min="0" max="100" value="50" aria-label="Earlier and later image comparison">
+<div id="pair-fits"><a id="earlier-fits">Earlier FITS</a><a id="later-fits">Later FITS</a></div>
+</div>
 <p id="coverage" class="muted"></p>
 </section>
 <aside class="sidebar" aria-label="Guide and observation evidence">
 <section class="card" aria-labelledby="guide-title">
 <h2 id="guide-title">How to compare</h2>
-<p>Switch dates and compare the target with nearby stars. Turn on the position overlay to check where the catalog predicts it should appear.</p>
+<p>Drag the slider to compare two observations. Look for a point that shifts relative to nearby stars.</p>
+<p id="guide-step" class="muted">Then reveal the expected position.</p>
 <p id="case-description" class="muted"></p>
-<p class="muted"><kbd>Space</kbd> switches dates. <kbd>R</kbd> toggles the overlay.</p>
+<p class="muted">Use the arrow keys on the slider. <kbd>Space</kbd> switches dates in Blink mode. <kbd>R</kbd> toggles the overlay.</p>
 </section>
 <section id="evidence" class="card" aria-labelledby="evidence-title">
 <h2 id="evidence-title">Pair evidence</h2>
@@ -140,6 +167,7 @@ const ui = Object.fromEntries(bindings.map(key => [key, byId(key)]));
 const raw = byId("case-data").textContent.trim();
 const cases = raw.startsWith("[") ? JSON.parse(raw) : [];
 let activeFrame = "first";
+let comparisonMode = "swipe";
 function pairEvidence() {
     const item = cases[Number(ui.target.value)];
     const first = item.frames[Number(ui.first.value)];
@@ -204,7 +232,7 @@ function initializeEvidence() {
     document.addEventListener("keydown", event => {
         if (event.repeat || event.altKey || event.ctrlKey || event.metaKey ||
             event.target.closest("input, select, textarea, button, a, [contenteditable]")) return;
-        if (event.code === "Space" && !ui.blink.disabled) {
+        if (event.code === "Space" && comparisonMode === "blink") {
             event.preventDefault();
             ui.blink.click();
         }
@@ -258,14 +286,36 @@ function render() {
     const current = cases[Number(ui.target.value)];
     const earlier = current.frames[Number(ui.first.value)];
     const later = current.frames[Number(ui.second.value)];
-    const sideBySide = ui.layout.getAttribute("aria-pressed") === "true";
-    const frames = sideBySide ? [earlier, later] : [activeFrame === "first" ? earlier : later];
-    ui.panels.setAttribute("data-layout", sideBySide ? "split" : "single");
+    const sideBySide = comparisonMode === "split";
+    const swiping = comparisonMode === "swipe";
+    const frames = sideBySide || swiping ? [earlier, later] : [activeFrame === "first" ? earlier : later];
+    ui.panels.setAttribute("data-layout", comparisonMode);
     ui.panels.replaceChildren(...frames.map(frame => makeExposure(frame, current.name, frame === earlier ? "Earlier" : "Later")));
-    ui.blink.textContent = sideBySide ? "Switch date" : activeFrame === "first" ? "Show later date" : "Show earlier date";
-    ui.blink.disabled = sideBySide;
+    if (swiping) {
+        const rule = document.createElement("div");
+        rule.className = "swipe-rule";
+        rule.setAttribute("aria-hidden", "true");
+        ui.panels.append(rule);
+    }
+    const swipe = byId("swipe");
+    ui.panels.style.setProperty("--swipe", swipe.value + "%");
+    byId("panel-controls").hidden = !swiping;
+    byId("earlier-date").textContent = "Earlier · " + earlier.date.slice(0, 10);
+    byId("later-date").textContent = "Later · " + later.date.slice(0, 10);
+    byId("earlier-fits").href = earlier.fits;
+    byId("later-fits").href = later.fits;
+    byId("case-summary").textContent = current.name + " · Change target or dates";
+    byId("swipe-mode").setAttribute("aria-pressed", String(swiping));
+    ui.layout.setAttribute("aria-pressed", String(sideBySide));
+    ui.blink.textContent = comparisonMode === "blink"
+        ? (activeFrame === "first" ? "Show later date" : "Show earlier date") : "Blink";
+    byId("reveal").setAttribute("aria-pressed", String(ui.overlay.checked));
+    byId("reveal").textContent = ui.overlay.checked ? "Hide expected position" : "Reveal expected position";
+    byId("guide-step").textContent = ui.overlay.checked
+        ? "The ring shows the catalog’s prediction for each date."
+        : "Then reveal the expected position.";
     const days = (later.mjd - earlier.mjd).toFixed(1);
-    byId("frame-status").textContent = (sideBySide ? "Showing both dates" : "Showing " + frames[0].date) + " · " + days + " days between frames";
+    byId("frame-status").textContent = (sideBySide || swiping ? "Comparing two observation dates" : "Showing " + frames[0].date) + " · " + days + " days between frames";
     ui.coverage.textContent = ui.overlay.checked && frames.some(frame => !frame.marker)
         ? "The expected position falls outside the common coverage in at least one displayed frame."
         : ui.overlay.checked ? "The ring marks the expected position." : "";
@@ -302,13 +352,24 @@ if (cases.length) {
     ui.first.addEventListener("change", selectEarlier);
     ui.second.addEventListener("change", render);
     ui.overlay.addEventListener("change", render);
+    byId("swipe").addEventListener("input", event => {
+        ui.panels.style.setProperty("--swipe", event.target.value + "%");
+    });
+    byId("reveal").addEventListener("click", () => {
+        ui.overlay.checked = !ui.overlay.checked;
+        render();
+    });
+    byId("swipe-mode").addEventListener("click", () => {
+        comparisonMode = "swipe";
+        render();
+    });
     ui.blink.addEventListener("click", () => {
-        activeFrame = activeFrame === "first" ? "second" : "first";
+        activeFrame = comparisonMode === "blink" && activeFrame === "later" ? "first" : "later";
+        comparisonMode = "blink";
         render();
     });
     ui.layout.addEventListener("click", () => {
-        const enabled = ui.layout.getAttribute("aria-pressed") === "true";
-        ui.layout.setAttribute("aria-pressed", String(!enabled));
+        comparisonMode = comparisonMode === "split" ? "swipe" : "split";
         render();
     });
     selectTarget();
