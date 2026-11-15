@@ -116,6 +116,10 @@ kbd{border:1px solid #4a5c6e;border-radius:.25rem;padding:.02rem .28rem;font-fam
 #swipe{height:30px}
 @media(max-width:930px){.workspace-grid{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:560px){.masthead{min-height:66px}.brand-copy small{max-width:21ch}.toolbar button{font-size:.76rem}}
+.swipe-rule{pointer-events:auto;touch-action:none;cursor:grab}
+.swipe-rule::before{content:"";position:absolute;inset:0 -21px}
+#panels[data-dragging=true],#panels[data-dragging=true] .swipe-rule{cursor:grabbing;user-select:none}
+#panels[data-layout=swipe] img{-webkit-user-drag:none;user-select:none}
 </style>
 </head>
 <body>
@@ -157,7 +161,7 @@ kbd{border:1px solid #4a5c6e;border-radius:.25rem;padding:.02rem .28rem;font-fam
 <aside class="sidebar" aria-label="Guide and observation evidence">
 <section class="card" aria-labelledby="guide-title">
 <h2 id="guide-title">How to compare</h2>
-<p>Drag the amber line across the image to compare two dates. Look for a point that shifts relative to nearby stars.</p>
+<p>Grab the amber line or its center handle and drag it left or right. Look for a point that shifts relative to nearby stars.</p>
 <p id="guide-step" class="muted">Then reveal the expected position.</p>
 <p id="case-description" class="muted"></p>
 <p class="muted">The slider below the image also works with arrow keys. <kbd>Space</kbd> switches dates in Blink mode. <kbd>R</kbd> toggles the overlay.</p>
@@ -199,6 +203,7 @@ let activeFrame = "first";
 let comparisonMode = "swipe";
 let blinkTimer = null;
 let dragPointer = null;
+let dragOffset = 0;
 function pairEvidence() {
     const item = cases[Number(ui.target.value)];
     const first = item.frames[Number(ui.first.value)];
@@ -285,6 +290,7 @@ function makeExposure(frame, name, label) {
     const exposure = document.createElement("div");
     exposure.className = "exposure";
     const img = document.createElement("img");
+    img.draggable = false;
     img.src = frame.image;
     img.alt = "SPHEREx infrared observation of " + name + ", " + frame.date;
     exposure.append(img);
@@ -395,20 +401,34 @@ if (cases.length) {
     const updateDivider = event => {
         const rect = ui.panels.getBoundingClientRect();
         if (!rect.width) return;
-        const value = Math.round(Math.max(0, Math.min(100, (event.clientX - rect.left) / rect.width * 100)));
+        const value = Math.round(Math.max(0, Math.min(100, (event.clientX - rect.left - dragOffset) / rect.width * 100)));
         byId("swipe").value = value;
         ui.panels.style.setProperty("--swipe", value + "%");
     };
     ui.panels.addEventListener("pointerdown", event => {
         if (comparisonMode !== "swipe" || !event.isPrimary || event.button !== 0) return;
+        event.preventDefault();
         dragPointer = event.pointerId;
+        const rect = ui.panels.getBoundingClientRect();
+        const current = Number(byId("swipe").value);
+        dragOffset = event.target.closest(".swipe-rule")
+            ? event.clientX - (rect.left + rect.width * current / 100) : 0;
         ui.panels.setPointerCapture(dragPointer);
+        ui.panels.setAttribute("data-dragging", "true");
         updateDivider(event);
     });
     ui.panels.addEventListener("pointermove", event => {
         if (comparisonMode === "swipe" && event.pointerId === dragPointer) updateDivider(event);
     });
-    ui.panels.addEventListener("lostpointercapture", () => { dragPointer = null; });
+    const finishDrag = event => {
+        if (event.pointerId !== dragPointer) return;
+        dragPointer = null;
+        dragOffset = 0;
+        ui.panels.removeAttribute("data-dragging");
+    };
+    for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
+        ui.panels.addEventListener(type, finishDrag);
+    }
     document.addEventListener("visibilitychange", () => {
         if (document.hidden && blinkTimer) {
             stopBlink();
