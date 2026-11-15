@@ -1,12 +1,15 @@
 import io
 import json
 import csv
+from base64 import b64encode
+from html import escape
 from pathlib import Path
 import aiohttp
 import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
+import streamlit.components.v1 as components
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.wcs import WCS
@@ -21,10 +24,10 @@ from core.fits_reader import read_level2
 from core.provenance import report_text
 from core.validation import chronological, comparison_warning
 
-st.set_page_config(page_title="orbitalQ | SPHEREx Explorer", page_icon="🌌", layout="wide")
+st.set_page_config(page_title="OrbitalQ | SPHEREx Explorer", page_icon="🌌", layout="wide")
 
-st.title("orbitalQ")
-st.caption("Select a target → view a real sky image → inspect observations → compare epochs")
+st.title("OrbitalQ")
+st.caption("Explore the infrared sky with real SPHEREx observations. Select a target to get started.")
 
 CUBE_URL = (
     "https://nasa-irsa-spherex.s3.us-east-1.amazonaws.com/"
@@ -329,6 +332,62 @@ def shared_stretch_limits(*arrays):
         if high <= low:
             high = low + 1
     return float(low), float(high)
+
+
+def display_swipe(first, second, stretch_limits):
+    """Overlay equal-sized native cutouts with a browser-side divider."""
+    def encode_image(frame):
+        buffer = io.BytesIO()
+        plt.imsave(
+            buffer, frame.image, format="png", origin="lower", cmap="inferno",
+            vmin=stretch_limits[0], vmax=stretch_limits[1],
+        )
+        return b64encode(buffer.getvalue()).decode("ascii")
+
+    height, width = first.image.shape
+    components.html(
+        f"""
+        <style>
+        body {{ margin: 0; background: #0c1523; color: #eaf2ff; font: 14px system-ui; }}
+        .stage {{
+            position: relative; width: min(100%, 440px, {400 * width / height:.2f}px);
+            aspect-ratio: {width} / {height}; margin: 0 auto;
+            overflow: hidden; border-radius: 12px; background: #060a13; --split: 50%;
+        }}
+        .stage img {{ position: absolute; width: 100%; height: 100%; image-rendering: pixelated; }}
+        .second {{ clip-path: inset(0 0 0 var(--split)); }}
+        .divider {{
+            position: absolute; left: var(--split); top: 0; bottom: 0; width: 2px;
+            background: #ffbf69; transform: translateX(-50%); pointer-events: none;
+        }}
+        .divider span {{
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            display: grid; place-items: center; width: 36px; height: 36px;
+            border-radius: 50%; background: #ffbf69; color: #172235; font-size: 22px;
+        }}
+        input {{ position: absolute; inset: 0; width: 100%; height: 100%;
+                 opacity: 0; margin: 0; cursor: ew-resize; }}
+        .stage:focus-within {{ outline: 3px solid #48d9e8; outline-offset: -3px; }}
+        .dates {{ display: flex; flex-wrap: wrap; justify-content: space-between;
+                  gap: 8px; padding: 10px 12px; max-width: 440px; margin: auto; }}
+        .dates span:first-child {{ color: #8eeafa; }}
+        .dates span:last-child {{ color: #ffd197; }}
+        </style>
+        <div class="dates">
+          <span>A · {escape(first.date_obs or "Date unavailable")}</span>
+          <span>B · {escape(second.date_obs or "Date unavailable")}</span>
+        </div>
+        <div class="stage">
+          <img src="data:image/png;base64,{encode_image(first)}" alt="Observation A">
+          <img class="second" src="data:image/png;base64,{encode_image(second)}" alt="Observation B">
+          <div class="divider" aria-hidden="true"><span>↔</span></div>
+          <input type="range" min="0" max="100" value="50"
+                 aria-label="Comparison divider position"
+                 oninput="this.parentElement.style.setProperty('--split', this.value + '%')">
+        </div>
+        """,
+        height=480,
+    )
 
 
 def observation_csv(frames, target_name, ra, dec, selected_index=None, comparison_index=None, warning=None):
@@ -870,19 +929,41 @@ with tab_visits:
                     st.warning(f"Scientific differencing disabled: {warning}. Images remain available for cautious visual inspection only.")
                 else:
                     st.info("Metadata are compatible for visual comparison; WCS registration, FLAGS, VARIANCE and PSF matching are still required before scientific differencing.")
-                mode = st.radio("Comparison view", ["Before / after", "Blink"], horizontal=True)
-                comparison_frame = frames[compare_index]
-                shared_limits = shared_stretch_limits(frame.image, comparison_frame.image)
-                if mode == "Blink":
-                    blink_key = f"blink_{selected}_{compare_index}"
+                first, second = (frames[index] for index in sorted((selected, compare_index)))
+                matching_units = (
+                    first.bunit == second.bunit
+                    and first.bunit.strip().lower() not in {"", "unknown"}
+                )
+                shared_limits = (
+                    shared_stretch_limits(first.image, second.image) if matching_units else None
+                )
+                modes = ["Before / after", "Blink"]
+                if (
+                    shared_limits is not None
+                    and first.image.shape == second.image.shape
+                    and np.isfinite(first.image).any()
+                    and np.isfinite(second.image).any()
+                ):
+                    modes.insert(0, "Swipe")
+                mode = st.radio("Comparison view", modes, horizontal=True)
+                if "Swipe" not in modes:
+                    st.caption("Swipe requires matching image dimensions and units, with valid pixels in both visits.")
+                if mode == "Swipe":
+                    st.caption(
+                        "Drag the divider on the image or use the arrow keys. "
+                        "The cutouts share a color scale and retain their native pixel grids."
+                    )
+                    display_swipe(first, second, shared_limits)
+                elif mode == "Blink":
+                    blink_key = f"blink_{first.obsid}_{second.obsid}_{selected}_{compare_index}"
                     if blink_key not in st.session_state:
                         st.session_state[blink_key] = 0
                     if st.button("Show next blink frame", key=f"button_{blink_key}"):
                         st.session_state[blink_key] = 1 - st.session_state[blink_key]
-                    blink_frame = (frame, comparison_frame)[st.session_state[blink_key]]
+                    blink_frame = (first, second)[st.session_state[blink_key]]
                     st.caption(
-                        "Blink mode alternates the two real cutouts using one shared "
-                        "intensity stretch. It is a visual aid, not a difference image."
+                        ("Both images share a color scale. " if shared_limits else "Each image uses its own color scale. ")
+                        + "Use the button to switch between observations."
                     )
                     display_array(
                         blink_frame.image,
@@ -891,12 +972,7 @@ with tab_visits:
                         stretch_limits=shared_limits,
                     )
                 else:
-                    before_frame, after_frame = sorted(
-                        (frame, comparison_frame),
-                        key=lambda item: (
-                            item.mjd_obs if np.isfinite(item.mjd_obs) else float("inf")
-                        ),
-                    )
+                    before_frame, after_frame = first, second
                     chronological_pair = (
                         np.isfinite(before_frame.mjd_obs)
                         and np.isfinite(after_frame.mjd_obs)
@@ -913,8 +989,8 @@ with tab_visits:
                         else f"Observation B · {after_frame.date_obs or 'date unavailable'}"
                     )
                     st.caption(
-                        "Both panels use the same intensity stretch. The images are "
-                        "shown side by side; no pixel subtraction or variability claim is made."
+                        ("Both panels share a color scale. " if shared_limits else "Each panel uses its own color scale. ")
+                        + "Both panels retain the original pixel grids."
                     )
                     left, right = st.columns(2)
                     with left:
