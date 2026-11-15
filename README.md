@@ -2,6 +2,12 @@
 
 An observation viewer for **Planet X and SPHEREx**, NASA Space Apps Challenge 2026. Compare two real SPHEREx images of the same sky field, inspect the expected target position and open the original FITS.
 
+## Explore an observation pair
+
+Start with Barnard’s Star. Alternate the dates, compare the bright source with the surrounding stars, and reveal the expected catalog position. The evidence panel shows the catalog-predicted displacement for the selected dates. It does not represent a measurement from the images.
+
+Use **Copy comparison link** to share the exact pair or **Download evidence CSV** to export the dates, detector, predicted displacement, and links to the original FITS. The WISE 0855 example shows a faint target whose identification is inconclusive in the individual previews.
+
 ## Generate the viewer
 
 Use Python 3.11 or 3.12 in a virtual environment.

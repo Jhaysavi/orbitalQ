@@ -25,6 +25,11 @@ img{display:block;width:100%;height:auto}
 figcaption{overflow-wrap:anywhere}
 #frame-status{min-height:1.6em}
 .muted{color:#c3cada}
+#investigation,#evidence{margin:1rem 0;padding:1rem;border:1px solid #414960;border-radius:.75rem}
+#investigation h2,#evidence h2{margin:0}
+#investigation p,#evidence p{margin:.4rem 0}
+.actions{display:flex;flex-wrap:wrap;gap:.6rem}
+kbd{border:1px solid #697598;border-radius:.2rem;padding:.04rem .28rem}
 </style>
 </head>
 <body>
@@ -35,6 +40,11 @@ figcaption{overflow-wrap:anywhere}
 </header>
 <p id="empty" hidden>No observations have been packaged yet. Follow the repository README to generate a viewer from NASA/IPAC IRSA cutouts.</p>
 <section id="workspace" hidden aria-label="Observation comparison">
+<section id="investigation" aria-labelledby="investigation-title">
+<h2 id="investigation-title">Which point moved?</h2>
+<p>Alternate between the dates, compare the point with nearby stars, then reveal the expected position.</p>
+<p class="muted"><kbd>Space</kbd> alternates images. <kbd>R</kbd> toggles the position overlay.</p>
+</section>
 <fieldset>
 <legend>Compare observation dates</legend>
 <label>Target <select id="target"></select></label>
@@ -42,12 +52,20 @@ figcaption{overflow-wrap:anywhere}
 <label>Later frame <select id="second"></select></label>
 <button id="blink" type="button">Alternate image</button>
 <button id="layout" type="button" aria-pressed="false">Side by side</button>
-<label><input id="overlay" type="checkbox"> Expected position</label>
+<label><input id="overlay" type="checkbox"> Reveal expected position</label>
 </fieldset>
 <p id="frame-status" role="status"></p>
 <div id="panels"></div>
 <p id="case-description"></p>
 <p id="coverage" class="muted"></p>
+<section id="evidence" aria-labelledby="evidence-title">
+<h2 id="evidence-title">Evidence for this pair</h2>
+<p id="expected-shift"></p>
+<p id="wavelengths"></p>
+<p class="muted">This prediction uses catalog proper motion and elapsed time. It omits parallax and is independent of any movement visible in the images.</p>
+<div class="actions"><button id="share" type="button">Copy comparison link</button><button id="export" type="button">Download evidence CSV</button></div>
+<p id="share-status" role="status"></p>
+</section>
 <h2>Observation sources</h2>
 <p id="details"></p>
 <p><a id="catalog">Astrometry reference</a> · <a id="snapshot">Source observation manifest</a> · <a href="https://irsa.ipac.caltech.edu/spherex-archive-documentation/spherex-data-access/">NASA/IPAC IRSA archive</a></p>
@@ -63,6 +81,81 @@ const ui = Object.fromEntries(bindings.map(key => [key, byId(key)]));
 const raw = byId("case-data").textContent.trim();
 const cases = raw.startsWith("[") ? JSON.parse(raw) : [];
 let activeFrame = "first";
+function pairEvidence() {
+    const item = cases[Number(ui.target.value)];
+    const first = item.frames[Number(ui.first.value)];
+    const second = item.frames[Number(ui.second.value)];
+    const motion = {barnard: Math.hypot(.801551, 10.362394), wise_0855: Math.hypot(8.1, .7)}[item.key];
+    const shift = motion * (second.mjd - first.mjd) / 365.25;
+    return { item, first, second, shift };
+}
+function renderEvidence() {
+    const { first, second, shift } = pairEvidence();
+    byId("expected-shift").textContent = Number.isFinite(shift)
+        ? "Expected catalog displacement: " + shift.toFixed(2) + " arcseconds."
+        : "Catalog displacement unavailable.";
+    byId("wavelengths").textContent = [first, second].every(frame => Number.isFinite(frame.wavelength))
+        ? "Effective wavelengths: " + first.wavelength.toFixed(3) + " and " + second.wavelength.toFixed(3) + " µm."
+        : "";
+    byId("share-status").textContent = "";
+}
+function selectObservation(control, frames, id) {
+    const match = [...control.options].find(option => frames[Number(option.value)].obsid === id);
+    if (match) control.value = match.value;
+}
+function downloadEvidence() {
+    const { item, first, second, shift } = pairEvidence();
+    const rows = [["target", "utc", "observation_id", "detector", "wavelength_um", "fits_url", "catalog", "preview_manifest", "predicted_pair_shift_arcsec"]];
+    for (const frame of [first, second]) {
+        rows.push([item.name, frame.date, frame.obsid, item.detector, frame.wavelength ?? "", frame.fits,
+            item.source, item.snapshot ?? "", Number.isFinite(shift) ? shift.toFixed(2) : ""]);
+    }
+    const csv = rows.map(row => row.map(value => '"' + String(value).replaceAll('"', '""') + '"').join(",")).join("\r\n");
+    const url = URL.createObjectURL(new Blob([csv], {type: "text/csv;charset=utf-8"}));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "orbitalq-" + item.key + "-evidence.csv";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function initializeEvidence() {
+    const params = new URLSearchParams(location.search);
+    const { item } = pairEvidence();
+    selectObservation(ui.first, item.frames, params.get("earlier"));
+    selectEarlier();
+    selectObservation(ui.second, item.frames, params.get("later"));
+    render();
+    byId("export").addEventListener("click", downloadEvidence);
+    byId("share").addEventListener("click", async () => {
+        const { item, first, second } = pairEvidence();
+        const url = new URL(location.href);
+        url.searchParams.set("target", item.key);
+        url.searchParams.set("earlier", first.obsid);
+        url.searchParams.set("later", second.obsid);
+        try {
+            await navigator.clipboard.writeText(url.href);
+            byId("share-status").textContent = "Comparison link copied.";
+        } catch {
+            const link = document.createElement("a");
+            link.href = url.href;
+            link.textContent = "Open or copy this comparison link";
+            byId("share-status").replaceChildren(link);
+        }
+    });
+    document.addEventListener("keydown", event => {
+        if (event.repeat || event.altKey || event.ctrlKey || event.metaKey ||
+            event.target.closest("input, select, textarea, button, a, [contenteditable]")) return;
+        if (event.code === "Space" && !ui.blink.disabled) {
+            event.preventDefault();
+            ui.blink.click();
+        }
+        if (event.key.toLowerCase() === "r") {
+            ui.overlay.checked = !ui.overlay.checked;
+            render();
+        }
+    });
+}
+
 
 function option(label, value) {
     return new Option(label, value);
@@ -111,6 +204,7 @@ function render() {
     byId("case-description").textContent = current.description;
     byId("snapshot").href = current.snapshot;
     ui.catalog.href = current.source;
+    renderEvidence();
 }
 
 function selectTarget() {
@@ -150,6 +244,7 @@ if (cases.length) {
         render();
     });
     selectTarget();
+    initializeEvidence();
 } else {
     byId("empty").hidden = false;
 }
