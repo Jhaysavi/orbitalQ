@@ -1,6 +1,6 @@
 # Streamlit interface
 
-The interface opens the real DR1 spectral preview. Use **Compare Level 2 visits** to open the observation workspace. **Load real example** opens the two archive files listed in `app.py`. After loading, the comparison appears above the file controls and observation metadata. **Real DR1 sky preview** displays spectral channels. The Level 2 workspace uses separate observation timestamps.
+**Home** introduces the project and links to the real DR1 spectral preview and packaged examples. **Solution** explains the observation workflow, **About OrbitalQ** provides the beginner guide, and **Contact** links to the team portfolios. Use **Compare Level 2 visits** to open the observation workspace. **Load real example** opens the two archive files listed in `app.py`. After loading, the comparison appears above the file controls and observation metadata. **Real DR1 sky preview** displays spectral channels. The Level 2 workspace uses separate observation timestamps.
 
 - **Swipe** uses the same color stretch for both native cutouts. It is available when both contain valid pixels and have matching dimensions and image units. The **Auto-Blink A/B** button in Swipe alternates the two real images until paused. The comparison shows the elapsed time when both visits have valid MJD-OBS values.
 - **Blink** switches between observations. **Before / after** places the images side by side.

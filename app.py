@@ -25,7 +25,7 @@ from core.coordinates import is_inside_image, pixel_scale_arcsec, world_to_pixel
 from core.fits_reader import read_level2
 from core.provenance import report_text
 from core.validation import chronological, comparison_warning
-from ui.about import render_about, render_wise_field_resources
+from ui.about import open_view, render_about, render_wise_field_resources
 from ui.presentation import FAVICON_PATH, display_swipe, render_header
 
 st.set_page_config(
@@ -491,12 +491,94 @@ def open_packaged_examples():
 
 
 view = st.radio(
-    "Explorer view", ["Real DR1 sky preview", "Compare Level 2 visits", "Ready-to-view examples", "About OrbitalQ"],
+    "Explorer view",
+    [
+        "Home", "Solution", "Real DR1 sky preview", "Compare Level 2 visits",
+        "Ready-to-view examples", "About OrbitalQ", "Contact",
+    ],
     horizontal=True,
     key="explorer_view",
 )
 
-if view == "Real DR1 sky preview":
+if view == "Home":
+    st.subheader("Your first look at the infrared sky")
+    st.write(
+        "OrbitalQ makes real observations from NASA’s SPHEREx mission easier to explore. "
+        "Start by comparing two pictures of the same sky field, or use a spectral "
+        "cutout to see how the field looks at different wavelengths."
+    )
+    examples_column, spectral_column = st.columns(2)
+    with examples_column:
+        with st.container(border=True):
+            st.markdown("### See how a field changes over time")
+            st.write(
+                "Choose Barnard’s Star or WISE 0855 and compare dated observations "
+                "with a draggable divider. The examples are ready to open."
+            )
+            st.button(
+                "Open real examples", type="primary", on_click=open_view,
+                args=("Ready-to-view examples",), use_container_width=True,
+            )
+    with spectral_column:
+        with st.container(border=True):
+            st.markdown("### Explore infrared wavelengths")
+            st.write(
+                "Move through the spectral channels of the SPHEREx DR1 All-Sky Cube "
+                "and look at how the same field appears at different wavelengths."
+            )
+            st.button(
+                "Open the DR1 sky preview", on_click=open_view,
+                args=("Real DR1 sky preview",), use_container_width=True,
+            )
+    st.caption("Built for Planet X and SPHEREx at the 2026 NASA Space Apps Challenge.")
+
+elif view == "Solution":
+    st.subheader("From archive images to a comparison you can explore")
+    st.write(
+        "Spotting changes across observations takes more than finding two images. "
+        "You need to know when they were taken and whether they cover the same region. "
+        "OrbitalQ brings that information into one workspace."
+    )
+    with st.container(border=True):
+        st.markdown("### Find your field")
+        st.write(
+            "Choose a target preset or enter sky coordinates. In the Level 2 workspace, "
+            "browse public files, paste a public FITS link, or upload observations you "
+            "already have. The app reads each file’s sky coordinates to check coverage."
+        )
+        st.markdown("### Compare two visits")
+        st.write(
+            "Choose exposures by date, check the time between them, and use Swipe, "
+            "Blink, or the side-by-side view when available."
+        )
+        st.markdown("### Follow the evidence")
+        st.write(
+            "Review observation dates, detector information, quality flags, and file "
+            "sources. Export an observation list and a provenance report to keep a record."
+        )
+    st.button(
+        "Open the Level 2 workspace", type="primary", on_click=open_view,
+        args=("Compare Level 2 visits",),
+    )
+
+elif view == "Contact":
+    st.subheader("Contact the OrbitalQ team")
+    st.write("Find the team behind the project and our public work.")
+    aspira, jay = st.columns(2)
+    for column, name, url in (
+        (aspira, "Aspira Qualquer", "https://aspiraqualquer.vercel.app/"),
+        (jay, "Jay", "https://jhay.goskip.app/"),
+    ):
+        with column:
+            with st.container(border=True):
+                st.markdown(f"### {name}")
+                st.link_button(f"Visit {name}’s portfolio", url, use_container_width=True)
+    st.markdown(
+        "[View the public project repository]"
+        "(https://github.com/SouBeatrizKaroline/NasaSpaceApp_OrbitalQ)"
+    )
+
+elif view == "Real DR1 sky preview":
     st.subheader("SPHEREx DR1 All-Sky Cube")
     render_wise_field_resources()
     st.info(
