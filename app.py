@@ -36,8 +36,8 @@ CUBE_URL = (
     "dr1/hips5_cube/hips_20261026/Norder5/Dir10000/Npix10226_cube.fits"
 )
 LEVEL2_CACHE_VERSION = "level2-v2"
-DEMO_RA = 160.618
-DEMO_DEC = 30.6694
+DEFAULT_TARGET = "WISE 0855−0714"
+EXAMPLE_TARGET = "SPHEREx DR1 example field"
 DEMO_FITS_URLS = (
     "https://nasa-irsa-spherex.s3.us-east-1.amazonaws.com/"
     "dr1/level2/2025W17_4B/l2b-v27-2026-196/1/"
@@ -47,7 +47,9 @@ DEMO_FITS_URLS = (
     "level2_2025W17_4B_0001_2D1_spx_l2b-v27-2026-196.fits",
 )
 
-TARGET_PRESETS = json.loads((Path(__file__).parent / "config" / "targets.json").read_text())
+TARGET_PRESETS = json.loads((Path(__file__).parent / "config" / "targets.json").read_text(encoding="utf-8"))
+DEMO_RA = TARGET_PRESETS[EXAMPLE_TARGET]["ra_deg"]
+DEMO_DEC = TARGET_PRESETS[EXAMPLE_TARGET]["dec_deg"]
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
@@ -60,7 +62,15 @@ def resolve_object_name(name: str):
         return {"ok": False, "message": str(exc)}
 
 
+def clear_resolved_target():
+    st.session_state.pop("resolved_object", None)
+    st.session_state.pop("resolved_object_name", None)
+    st.session_state.pop("object_name_input", None)
+
+
 def activate_demo_sequence():
+    clear_resolved_target()
+    st.session_state["target_preset"] = EXAMPLE_TARGET
     st.session_state["ra_input"] = DEMO_RA
     st.session_state["dec_input"] = DEMO_DEC
     st.session_state["demo_sequence_pending"] = True
@@ -80,12 +90,13 @@ def cached_s3_files(prefix: str, max_results: int):
 with st.sidebar:
     st.header("Target coordinates")
     known_presets = [name for name, values in TARGET_PRESETS.items() if values.get("ra_deg") is not None]
-    preset_options = ["Custom"] + known_presets
+    preset_options = [DEFAULT_TARGET] + [name for name in known_presets if name != DEFAULT_TARGET] + ["Custom"]
     preset = st.selectbox(
         "Target preset",
         preset_options,
-        index=1 if known_presets else 0,
-        help="Choose the verified WISE 0855 preset or enter a target name and ICRS coordinates manually.",
+        key="target_preset",
+        on_change=clear_resolved_target,
+        help="Choose a reference sky field, or select Custom to enter coordinates manually.",
     )
     preset_values = TARGET_PRESETS.get(preset, {})
     target_name = preset
@@ -93,6 +104,7 @@ with st.sidebar:
         target_name = st.text_input("Target name", value="Custom target")
     object_name = st.text_input(
         "Resolve object name (optional)",
+        key="object_name_input",
         help="Uses Astropy's configured name resolver. If it cannot resolve the name, enter ICRS coordinates manually.",
     )
     if st.button("Resolve name"):
@@ -172,12 +184,13 @@ with st.sidebar:
                                    value=51)
     display_low = st.slider("Display lower percentile", 0.0, 20.0, 2.0, 0.5)
     display_high = st.slider("Display upper percentile", 80.0, 100.0, 98.0, 0.5)
-    st.caption("WISE 0855−0714 is the verified preset. Its supplied challenge coordinate has no reference epoch.")
-    unavailable_targets = [name for name, values in TARGET_PRESETS.items() if values.get("ra_deg") is None]
-    if unavailable_targets:
-        with st.expander("Targets awaiting vetted coordinates"):
-            st.write(", ".join(unavailable_targets))
-            st.caption("These names remain in the research configuration but are not assigned guessed coordinates.")
+    if preset_values and not (resolved_for_name and resolved_for_name.get("ok")):
+        note = preset_values["note"]
+        if preset_values.get("epoch"):
+            note = f"Reference epoch: {preset_values['epoch']}. {note}"
+        st.caption(note)
+        if preset_values.get("source"):
+            st.markdown(f"[Preset coordinate source]({preset_values['source']})")
 
 try:
     ra = float(ra)
@@ -407,7 +420,7 @@ if view == "Real DR1 sky preview":
         if not is_inside_image(x, y, image_hdu.header["NAXIS1"], image_hdu.header["NAXIS2"]):
             st.warning(
                 "The current built-in tile does not contain these coordinates. "
-                "The first prototype is preconfigured for the WISE 0855−0714 tile."
+                "Choose WISE 0855−0714 for the built-in preview, or use Compare Level 2 visits with files covering your target."
             )
         elif plane + 1 in (51, 52):
             st.warning("This is a documented blank channel adjacent to the dichroic split.")
