@@ -69,7 +69,8 @@ scripts are intentionally not part of the automated test suite; see
 
 | Path | Purpose |
 | --- | --- |
-| `app.py` | Streamlit user interface |
+| `app.py` | Streamlit views, archive controls and observation workflow |
+| `ui/` | [Streamlit presentation components and preview assets](docs/interface.md) |
 | `core/` | WCS, FITS, provenance and scientific validation helpers |
 | `config/` | Target presets and other small, reviewable configuration |
 | `data/` | Local cutouts, previews, manifests and cache placeholders |

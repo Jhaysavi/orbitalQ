@@ -1,15 +1,12 @@
 import io
 import json
 import csv
-from base64 import b64encode
-from html import escape
 from pathlib import Path
 import aiohttp
 import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
-import streamlit.components.v1 as components
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.wcs import WCS
@@ -23,35 +20,11 @@ from core.coordinates import is_inside_image, pixel_scale_arcsec, world_to_pixel
 from core.fits_reader import read_level2
 from core.provenance import report_text
 from core.validation import chronological, comparison_warning
+from ui.presentation import display_swipe, render_header
 
 st.set_page_config(page_title="OrbitalQ | SPHEREx Explorer", page_icon="🌌", layout="wide")
 
-st.markdown("""
-<style>
-.stApp {
-    background: radial-gradient(ellipse at 15% 0%, #171630 0%, #060812 55%);
-}
-.oq-hero {
-    padding: clamp(1.1rem, 4vw, 2.2rem);
-    border: 1px solid #3b3561;
-    border-radius: 18px;
-    background: radial-gradient(ellipse at 85% 0%, #173043 0%, #101529 58%);
-}
-.oq-hero .oq-label { color: #84e9f5; font: 600 .75rem ui-monospace, monospace; }
-.oq-hero h1 { color: #f1f5ff; margin: .25rem 0; padding: 0; font-size: clamp(2rem, 5vw, 3.4rem); }
-.oq-hero p { color: #c5d2eb; margin: 0; }
-[data-testid="stMetric"], [data-testid="stFileUploaderDropzone"] {
-    border: 1px solid #3b3561; border-radius: 12px; padding: .75rem;
-    background: #101529;
-}
-[data-testid="stMetricValue"] { font-family: ui-monospace, monospace; }
-</style>
-<header class="oq-hero">
-  <div class="oq-label">SPHEREx INFRARED SKY EXPLORER</div>
-  <h1>OrbitalQ</h1>
-  <p>Explore real observations and compare the same region of the sky across dates.</p>
-</header>
-""", unsafe_allow_html=True)
+render_header()
 
 CUBE_URL = (
     "https://nasa-irsa-spherex.s3.us-east-1.amazonaws.com/"
@@ -314,7 +287,7 @@ def quality_counts(data, flags=None, variance=None):
     return finite_pixels, flag_pixels, median_variance
 
 
-def display_array(data, title, marker=None, percentiles=None, stretch_limits=None):
+def display_array(data, title, marker=None, percentiles=None, stretch_limits=None, *, unit="MJy/sr"):
     data = np.asarray(data, dtype=float)
     finite = np.isfinite(data)
     if not finite.any():
@@ -338,7 +311,7 @@ def display_array(data, title, marker=None, percentiles=None, stretch_limits=Non
     ax.set_title(title, color="#f1f5ff")
     ax.set_xlabel("Cutout X (pixel)", color="#bdcbea")
     ax.set_ylabel("Cutout Y (pixel)", color="#bdcbea")
-    colorbar = fig.colorbar(im, ax=ax, label="MJy/sr")
+    colorbar = fig.colorbar(im, ax=ax, label=unit)
     colorbar.ax.tick_params(colors="#bdcbea")
     colorbar.ax.yaxis.label.set_color("#bdcbea")
     fig.tight_layout()
@@ -362,62 +335,6 @@ def shared_stretch_limits(*arrays):
         if high <= low:
             high = low + 1
     return float(low), float(high)
-
-
-def display_swipe(first, second, stretch_limits):
-    """Overlay equal-sized native cutouts with a browser-side divider."""
-    def encode_image(frame):
-        buffer = io.BytesIO()
-        plt.imsave(
-            buffer, frame.image, format="png", origin="lower", cmap="inferno",
-            vmin=stretch_limits[0], vmax=stretch_limits[1],
-        )
-        return b64encode(buffer.getvalue()).decode("ascii")
-
-    height, width = first.image.shape
-    components.html(
-        f"""
-        <style>
-        body {{ margin: 0; background: #0c1523; color: #eaf2ff; font: 14px system-ui; }}
-        .stage {{
-            position: relative; width: min(100%, 440px, {400 * width / height:.2f}px);
-            aspect-ratio: {width} / {height}; margin: 0 auto;
-            overflow: hidden; border-radius: 12px; background: #060a13; --split: 50%;
-        }}
-        .stage img {{ position: absolute; width: 100%; height: 100%; image-rendering: pixelated; }}
-        .second {{ clip-path: inset(0 0 0 var(--split)); }}
-        .divider {{
-            position: absolute; left: var(--split); top: 0; bottom: 0; width: 2px;
-            background: #ffbf69; transform: translateX(-50%); pointer-events: none;
-        }}
-        .divider span {{
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            display: grid; place-items: center; width: 36px; height: 36px;
-            border-radius: 50%; background: #ffbf69; color: #172235; font-size: 22px;
-        }}
-        input {{ position: absolute; inset: 0; width: 100%; height: 100%;
-                 opacity: 0; margin: 0; cursor: ew-resize; }}
-        .stage:focus-within {{ outline: 3px solid #48d9e8; outline-offset: -3px; }}
-        .dates {{ display: flex; flex-wrap: wrap; justify-content: space-between;
-                  gap: 8px; padding: 10px 12px; max-width: 440px; margin: auto; }}
-        .dates span:first-child {{ color: #8eeafa; }}
-        .dates span:last-child {{ color: #ffd197; }}
-        </style>
-        <div class="dates">
-          <span>A · {escape(first.date_obs or "Date unavailable")}</span>
-          <span>B · {escape(second.date_obs or "Date unavailable")}</span>
-        </div>
-        <div class="stage">
-          <img src="data:image/png;base64,{encode_image(first)}" alt="Observation A">
-          <img class="second" src="data:image/png;base64,{encode_image(second)}" alt="Observation B">
-          <div class="divider" aria-hidden="true"><span>↔</span></div>
-          <input type="range" min="0" max="100" value="50"
-                 aria-label="Comparison divider position"
-                 oninput="this.parentElement.style.setProperty('--split', this.value + '%')">
-        </div>
-        """,
-        height=480,
-    )
 
 
 def observation_csv(frames, target_name, ra, dec, selected_index=None, comparison_index=None, warning=None):
@@ -566,32 +483,21 @@ if view == "DR1 sky preview":
         )
 
 elif view == "Compare Level 2 visits":
-    st.subheader("Explore real observations")
-    st.caption(
-        "Start with a verified real-data example, browse public S3 folders, "
-        "or upload FITS files you already downloaded. Every loaded image is checked against its WCS."
-    )
-
     with st.container(border=True):
-        demo_copy, demo_action = st.columns([3, 1])
+        demo_copy, demo_action = st.columns([2, 1])
         with demo_copy:
-            st.markdown("### A real sequence, ready to explore")
+            st.subheader("One sky field, two observations")
             st.write(
-                "Load two genuine SPHEREx DR1 Level 2 FITS observations with "
-                "IMAGE, FLAGS, VARIANCE and observation metadata."
-            )
-            st.caption(
-                "This example changes the target to a verified field at "
-                "RA 160.6180°, Dec +30.6694°. "
+                "Open two public DR1 observations and drag the divider to reveal each visit."
             )
         with demo_action:
-            st.write("")
             st.button(
                 "Load real example",
                 type="primary",
                 on_click=activate_demo_sequence,
                 use_container_width=True,
             )
+            st.caption("Example field: RA 160.6180°, Dec +30.6694°")
     if st.session_state.pop("demo_sequence_pending", False):
         demo_frames = []
         demo_errors = []
@@ -629,7 +535,12 @@ elif view == "Compare Level 2 visits":
         for error in demo_result["errors"]:
             st.error(f"Could not load a demonstration observation: {error}")
 
-    with st.expander("Browse the public SPHEREx archive (works without SIA)"):
+            st.caption("You can also upload FITS files downloaded directly from the archive.")
+
+    workspace = st.container()
+    st.subheader("Add your own observations")
+    st.caption("Use Level 2 FITS files that cover the coordinates in the sidebar.")
+    with st.expander("Browse the public SPHEREx archive"):
         st.caption(
             "The public S3 directory listing is used instead of the unavailable "
             "coordinate-search service. Browse a bounded folder sample, then load "
@@ -753,50 +664,41 @@ elif view == "Compare Level 2 visits":
                 "This is a user-selected folder sample, not a global coverage search."
             )
 
-    st.write(
-        "You can also upload genuine SPHEREx Level 2 MEF FITS files. orbitalQ extracts "
-        "a target-centred cutout from each file using its own WCS, rejects files whose "
-        "footprint misses the target, and orders frames by actual MJD-OBS."
-    )
-    st.warning(
-        "This first viewer is for visual inspection only. Before interpreting brightness "
-        "differences, observations must be matched in wavelength and PSF and checked "
-        "using FLAGS and VARIANCE. A fixed coordinate is used here; high-proper-motion "
-        "targets need epoch propagation."
-    )
-    with st.form("remote_fits_form"):
-        remote_url = st.text_input(
-            "Public SPHEREx Level 2 FITS URL",
-            help="Direct loading is independent of archive discovery. Only the public IRSA SPHEREx hosts are accepted.",
-            key="remote_fits_url",
-        )
-        load_remote = st.form_submit_button("Load remote FITS")
-    if load_remote:
-        if not is_supported_spherex_url(remote_url.strip()):
-            st.error(
-                "Enter an HTTPS FITS URL from nasa-irsa-spherex.s3.us-east-1.amazonaws.com "
-                "or irsa.ipac.caltech.edu."
+    with st.expander("Load from a public FITS link"):
+        with st.form("remote_fits_form"):
+            remote_url = st.text_input(
+                "Public SPHEREx Level 2 FITS URL",
+                help="Direct loading is independent of archive discovery. Only the public IRSA SPHEREx hosts are accepted.",
+                key="remote_fits_url",
             )
-        else:
-            try:
-                with st.spinner("Reading the target-centred FITS cutout from the public archive…"):
-                    remote_frame = cached_remote_level2(
-                        LEVEL2_CACHE_VERSION,
-                        remote_url.strip(),
-                        float(ra),
-                        float(dec),
-                        int(cutout_size),
-                    )
-                existing = st.session_state.get("remote_frames", [])
-                st.session_state["remote_frames"] = [
-                    frame for frame in existing if frame.source_url != remote_frame.source_url
-                ] + [remote_frame]
-                st.success(f"Loaded verified FITS footprint: {remote_frame.filename}")
-            except Exception as exc:
-                st.error(f"Could not load remote FITS observation: {exc}")
+            load_remote = st.form_submit_button("Load remote FITS")
+        if load_remote:
+            if not is_supported_spherex_url(remote_url.strip()):
+                st.error(
+                    "Enter an HTTPS FITS URL from nasa-irsa-spherex.s3.us-east-1.amazonaws.com "
+                    "or irsa.ipac.caltech.edu."
+                )
+            else:
+                try:
+                    with st.spinner("Reading the target-centred FITS cutout from the public archive…"):
+                        remote_frame = cached_remote_level2(
+                            LEVEL2_CACHE_VERSION,
+                            remote_url.strip(),
+                            float(ra),
+                            float(dec),
+                            int(cutout_size),
+                        )
+                    existing = st.session_state.get("remote_frames", [])
+                    st.session_state["remote_frames"] = [
+                        frame for frame in existing if frame.source_url != remote_frame.source_url
+                    ] + [remote_frame]
+                    st.success(f"Loaded verified FITS footprint: {remote_frame.filename}")
+                except Exception as exc:
+                    st.error(f"Could not load remote FITS observation: {exc}")
 
     uploads = st.file_uploader(
-        "Upload Level 2 FITS files (same target; ideally same detector)",
+        "Upload Level 2 FITS files",
+        help="For a closer comparison, choose visits of the same field from the same detector.",
         type=["fits", "fit"],
         accept_multiple_files=True,
     )
@@ -817,260 +719,254 @@ elif view == "Compare Level 2 visits":
 
         frames = chronological(frames)
 
-        if errors:
-            with st.expander(f"Files not displayed ({len(errors)})"):
-                for error in errors:
-                    st.write("• " + error)
+        with workspace:
+            if errors:
+                with st.expander(f"Files not displayed ({len(errors)})"):
+                    for error in errors:
+                        st.write("• " + error)
 
-        if frames:
-            st.info(f"{len(frames)} WCS-verified FITS cutout(s) loaded for the selected coordinates.")
-            blank_frames = [
-                f.filename for f in frames if not np.isfinite(f.image).any()
-            ]
-            if blank_frames:
-                st.warning(
-                    "These observations have no finite IMAGE pixels in the cutout "
-                    "and cannot display a valid image: " + ", ".join(blank_frames)
+            if frames:
+                st.subheader(target_name)
+                st.caption(f"{len(frames)} verified cutout(s) · RA {ra:.4f}° · Dec {dec:+.4f}°")
+                blank_frames = [
+                    f.filename for f in frames if not np.isfinite(f.image).any()
+                ]
+                if blank_frames:
+                    st.warning(
+                        "These observations have no finite IMAGE pixels in the cutout "
+                        "and cannot display a valid image: " + ", ".join(blank_frames)
+                    )
+                if len({frame.detector for frame in frames}) > 1:
+                    st.warning(
+                        "These files contain multiple detectors. Do not interpret their "
+                        "brightness as a temporal light curve; detector bands differ."
+                    )
+                labels = [
+                    f"{i + 1}. {f.date_obs or 'date unavailable'} · D{f.detector or '?'} · {f.obsid or 'OBSID unavailable'}"
+                    for i, f in enumerate(frames)
+                ]
+                frame_signature = tuple(
+                    (
+                        f.source_url,
+                        f.obsid,
+                        f.mjd_obs if np.isfinite(f.mjd_obs) else None,
+                    )
+                    for f in frames
                 )
-            if len({frame.detector for frame in frames}) > 1:
-                st.warning(
-                    "These files contain multiple detectors. Do not interpret their "
-                    "brightness as a temporal light curve; detector bands differ."
-                )
-            labels = [
-                f"{i + 1}. {f.date_obs or 'date unavailable'} · D{f.detector or '?'} · {f.obsid or 'OBSID unavailable'}"
-                for i, f in enumerate(frames)
-            ]
-            frame_signature = tuple(
-                (
-                    f.source_url,
-                    f.obsid,
-                    f.mjd_obs if np.isfinite(f.mjd_obs) else None,
-                )
-                for f in frames
-            )
-            if st.session_state.get("frame_signature") != frame_signature:
-                st.session_state["frame_signature"] = frame_signature
-                st.session_state["epoch_selector"] = 0
+                if st.session_state.get("frame_signature") != frame_signature:
+                    st.session_state["frame_signature"] = frame_signature
+                    st.session_state["epoch_selector"] = 0
 
-            def move_epoch(delta, count):
-                current = st.session_state.get("epoch_selector", 0)
-                st.session_state["epoch_selector"] = max(0, min(count - 1, current + delta))
-
-            selected = st.select_slider(
-                "Observation frame", options=list(range(len(frames))),
-                format_func=lambda i: labels[i],
-                key="epoch_selector",
-            )
-            previous, next_epoch = st.columns(2)
-            with previous:
-                st.button(
-                    "← Previous epoch",
-                    disabled=selected <= 0,
-                    key="previous_epoch",
-                    on_click=move_epoch,
-                    args=(-1, len(frames)),
+                first_slot, second_slot = st.columns(2) if len(frames) > 1 else (None, None)
+                selected = (
+                    first_slot.selectbox(
+                        "First observation", options=list(range(len(frames))),
+                        format_func=lambda i: labels[i],
+                        key="epoch_selector",
+                    )
+                    if len(frames) > 1 else 0
                 )
-            with next_epoch:
-                st.button(
-                    "Next epoch →",
-                    disabled=selected >= len(frames) - 1,
-                    key="next_epoch",
-                    on_click=move_epoch,
-                    args=(1, len(frames)),
-                )
-            frame = frames[selected]
-            a, b, c, d = st.columns(4)
-            a.metric("DATE-OBS", frame.date_obs or "not in header")
-            b.metric("MJD-OBS", f"{frame.mjd_obs:.5f}" if np.isfinite(frame.mjd_obs) else "not in header")
-            c.metric("Detector", frame.detector or "unknown")
-            d.metric("Wavelength", frame.wavelength)
-            st.caption(
-                f"Cutout field of view: {frame.image.shape[1] * frame.pixel_scale_x_arcsec:.1f}″ × "
-                f"{frame.image.shape[0] * frame.pixel_scale_y_arcsec:.1f}″"
-            )
-            display_array(
-                frame.image,
-                f"{frame.filename} · {frame.bunit}",
-                marker=(frame.cutout_pixel_x, frame.cutout_pixel_y),
-            )
-            st.caption(
-                f"Target pixel in original image: ({frame.pixel_x:.2f}, "
-                f"{frame.pixel_y:.2f}) · OBSID: {frame.obsid or 'not in header'} · "
-                f"Release: {frame.release} ({frame.release_source}) · "
-                f"Processing: {frame.processing_version} · "
-                f"Units: {frame.bunit} · Reference epoch: {frame.reference_epoch}"
-            )
-            with st.expander("Quality and provenance"):
-                finite_pixels = int(np.isfinite(frame.image).sum())
-                st.write(f"Finite IMAGE pixels in cutout: {finite_pixels}/{frame.image.size}")
-                if frame.flags is None:
-                    st.info(
-                        "FLAGS unavailable: "
-                        + frame.extension_issues.get("FLAGS", "no compatible extension")
-                    )
-                else:
-                    finite_flags = frame.flags[np.isfinite(frame.flags)]
-                    values, counts = np.unique(finite_flags, return_counts=True)
-                    st.dataframe(
-                        {"flag_value": values, "pixel_count": counts},
-                        use_container_width=True,
-                        hide_index=True,
-                    )
-                    missing_flag_pixels = int(frame.flags.size - finite_flags.size)
-                    if missing_flag_pixels:
-                        st.caption(f"FLAGS pixels without finite values: {missing_flag_pixels}")
-                    st.caption("FLAGS are quality metadata; SOURCE is not automatically treated as a bad-pixel mask.")
-                if frame.variance is None:
-                    st.info(
-                        "VARIANCE unavailable: "
-                        + frame.extension_issues.get("VARIANCE", "no compatible extension")
-                    )
-                else:
-                    finite_variance = frame.variance[np.isfinite(frame.variance)]
-                    if finite_variance.size:
-                        st.write(f"Median variance: {np.nanmedian(finite_variance):.5g} ({frame.bunit})²")
-                    else:
-                        st.warning("VARIANCE extension has no finite values in this cutout.")
-                st.write(f"Source: `{frame.source_url}`")
-                if frame.extension_issues:
+                frame = frames[selected]
+                comparison_stage = st.container()
+                with st.expander("Inspect selected observation", expanded=len(frames) == 1):
+                    a, b, c, d = st.columns(4)
+                    a.metric("DATE-OBS", frame.date_obs or "not in header")
+                    b.metric("MJD-OBS", f"{frame.mjd_obs:.5f}" if np.isfinite(frame.mjd_obs) else "not in header")
+                    c.metric("Detector", frame.detector or "unknown")
+                    d.metric("Wavelength", frame.wavelength)
                     st.caption(
-                        "Unavailable quality metadata: "
-                        + "; ".join(
-                            f"{name}: {reason}"
-                            for name, reason in frame.extension_issues.items()
-                        )
-                    )
-            if len(frames) > 1:
-                st.write("**Available visit sequence**")
-                st.dataframe(
-                    [{
-                        "date_obs": f.date_obs, "mjd_obs": f.mjd_obs,
-                        "detector": f.detector, "obsid": f.obsid,
-                        "wavelength": f.wavelength, "release": f.release,
-                        "processing": f.processing_version, "filename": f.filename,
-                        "source": f.source_url,
-                    } for f in frames],
-                    use_container_width=True,
-                    hide_index=True,
-                )
-            if len(frames) > 1:
-                compare_index = st.selectbox(
-                    "Compare selected frame with",
-                    options=[i for i in range(len(frames)) if i != selected],
-                    format_func=lambda i: labels[i],
-                )
-                warning = comparison_warning(frame, frames[compare_index])
-                if warning:
-                    st.warning(f"Scientific differencing disabled: {warning}. Images remain available for cautious visual inspection only.")
-                else:
-                    st.info("Metadata are compatible for visual comparison; WCS registration, FLAGS, VARIANCE and PSF matching are still required before scientific differencing.")
-                first, second = (frames[index] for index in sorted((selected, compare_index)))
-                matching_units = (
-                    first.bunit == second.bunit
-                    and first.bunit.strip().lower() not in {"", "unknown"}
-                )
-                shared_limits = (
-                    shared_stretch_limits(first.image, second.image) if matching_units else None
-                )
-                modes = ["Before / after", "Blink"]
-                if (
-                    shared_limits is not None
-                    and first.image.shape == second.image.shape
-                    and np.isfinite(first.image).any()
-                    and np.isfinite(second.image).any()
-                ):
-                    modes.insert(0, "Swipe")
-                mode = st.radio("Comparison view", modes, horizontal=True)
-                if "Swipe" not in modes:
-                    st.caption("Swipe requires matching image dimensions and units, with valid pixels in both visits.")
-                if mode == "Swipe":
-                    st.caption(
-                        "Drag the divider on the image or use the arrow keys. "
-                        "The cutouts share a color scale and retain their native pixel grids."
-                    )
-                    display_swipe(first, second, shared_limits)
-                elif mode == "Blink":
-                    blink_key = f"blink_{first.obsid}_{second.obsid}_{selected}_{compare_index}"
-                    if blink_key not in st.session_state:
-                        st.session_state[blink_key] = 0
-                    if st.button("Show next blink frame", key=f"button_{blink_key}"):
-                        st.session_state[blink_key] = 1 - st.session_state[blink_key]
-                    blink_frame = (first, second)[st.session_state[blink_key]]
-                    st.caption(
-                        ("Both images share a color scale. " if shared_limits else "Each image uses its own color scale. ")
-                        + "Use the button to switch between observations."
+                        f"Cutout field of view: {frame.image.shape[1] * frame.pixel_scale_x_arcsec:.1f}″ × "
+                        f"{frame.image.shape[0] * frame.pixel_scale_y_arcsec:.1f}″"
                     )
                     display_array(
-                        blink_frame.image,
-                        f"Blink frame · {blink_frame.date_obs or 'date unavailable'} · {blink_frame.obsid or 'OBSID unavailable'}",
-                        marker=(blink_frame.cutout_pixel_x, blink_frame.cutout_pixel_y),
-                        stretch_limits=shared_limits,
-                    )
-                else:
-                    before_frame, after_frame = first, second
-                    chronological_pair = (
-                        np.isfinite(before_frame.mjd_obs)
-                        and np.isfinite(after_frame.mjd_obs)
-                        and before_frame.mjd_obs < after_frame.mjd_obs
-                    )
-                    before_title = (
-                        f"Before · {before_frame.date_obs or 'date unavailable'}"
-                        if chronological_pair
-                        else f"Observation A · {before_frame.date_obs or 'date unavailable'}"
-                    )
-                    after_title = (
-                        f"After · {after_frame.date_obs or 'date unavailable'}"
-                        if chronological_pair
-                        else f"Observation B · {after_frame.date_obs or 'date unavailable'}"
+                        frame.image,
+                        "Selected observation",
+                        unit=frame.bunit,
+                        marker=(frame.cutout_pixel_x, frame.cutout_pixel_y),
                     )
                     st.caption(
-                        ("Both panels share a color scale. " if shared_limits else "Each panel uses its own color scale. ")
-                        + "Both panels retain the original pixel grids."
+                        f"Target pixel in original image: ({frame.pixel_x:.2f}, "
+                        f"{frame.pixel_y:.2f}) · OBSID: {frame.obsid or 'not in header'} · "
+                        f"Release: {frame.release} ({frame.release_source}) · "
+                        f"Processing: {frame.processing_version} · "
+                        f"Units: {frame.bunit} · Reference epoch: {frame.reference_epoch}"
                     )
-                    left, right = st.columns(2)
-                    with left:
-                        display_array(
-                            before_frame.image,
-                            before_title,
-                            marker=(before_frame.cutout_pixel_x, before_frame.cutout_pixel_y),
-                            stretch_limits=shared_limits,
+                with st.expander("Quality and provenance"):
+                    finite_pixels = int(np.isfinite(frame.image).sum())
+                    st.write(f"Finite IMAGE pixels in cutout: {finite_pixels}/{frame.image.size}")
+                    if frame.flags is None:
+                        st.info(
+                            "FLAGS unavailable: "
+                            + frame.extension_issues.get("FLAGS", "no compatible extension")
                         )
-                    with right:
-                        display_array(
-                            after_frame.image,
-                            after_title,
-                            marker=(after_frame.cutout_pixel_x, after_frame.cutout_pixel_y),
-                            stretch_limits=shared_limits,
+                    else:
+                        finite_flags = frame.flags[np.isfinite(frame.flags)]
+                        values, counts = np.unique(finite_flags, return_counts=True)
+                        st.dataframe(
+                            {"flag_value": values, "pixel_count": counts},
+                            use_container_width=True,
+                            hide_index=True,
                         )
-            else:
-                compare_index = None
-                warning = None
-            st.download_button(
-                "Export observation list (CSV)",
-                observation_csv(
-                    frames, target_name, float(ra), float(dec), selected,
-                    compare_index, warning,
-                ),
-                file_name="orbitalq_observations.csv",
-                mime="text/csv",
-            )
-            st.download_button(
-                "Download discovery report",
-                report_text(
-                    target_name, float(ra), float(dec), frames, selected,
-                    compare_index, warning,
-                ),
-                file_name="orbitalq_discovery_report.md",
-                mime="text/markdown",
-            )
-        elif not errors:
-            st.info("Upload Level 2 FITS files to begin.")
+                        missing_flag_pixels = int(frame.flags.size - finite_flags.size)
+                        if missing_flag_pixels:
+                            st.caption(f"FLAGS pixels without finite values: {missing_flag_pixels}")
+                        st.caption("FLAGS are quality metadata; SOURCE is not automatically treated as a bad-pixel mask.")
+                    if frame.variance is None:
+                        st.info(
+                            "VARIANCE unavailable: "
+                            + frame.extension_issues.get("VARIANCE", "no compatible extension")
+                        )
+                    else:
+                        finite_variance = frame.variance[np.isfinite(frame.variance)]
+                        if finite_variance.size:
+                            st.write(f"Median variance: {np.nanmedian(finite_variance):.5g} ({frame.bunit})²")
+                        else:
+                            st.warning("VARIANCE extension has no finite values in this cutout.")
+                    st.write(f"Source: `{frame.source_url}`")
+                    if frame.extension_issues:
+                        st.caption(
+                            "Unavailable quality metadata: "
+                            + "; ".join(
+                                f"{name}: {reason}"
+                                for name, reason in frame.extension_issues.items()
+                            )
+                        )
+                if len(frames) > 1:
+                    with st.expander("Available visit sequence"):
+                        st.dataframe(
+                            [{
+                                "date_obs": f.date_obs, "mjd_obs": f.mjd_obs,
+                                "detector": f.detector, "obsid": f.obsid,
+                                "wavelength": f.wavelength, "release": f.release,
+                                "processing": f.processing_version, "filename": f.filename,
+                                "source": f.source_url,
+                            } for f in frames],
+                            use_container_width=True,
+                            hide_index=True,
+                        )
+                with comparison_stage:
+                    if len(frames) > 1:
+                        compare_index = second_slot.selectbox(
+                            "Second observation",
+                            options=[i for i in range(len(frames)) if i != selected],
+                            format_func=lambda i: labels[i],
+                        )
+                        warning = comparison_warning(frame, frames[compare_index])
+                        if warning:
+                            st.warning(f"Visual comparison only: {warning}. Check the metadata before interpreting changes.")
+                        first, second = (frames[index] for index in sorted((selected, compare_index)))
+                        matching_units = (
+                            first.bunit == second.bunit
+                            and first.bunit.strip().lower() not in {"", "unknown"}
+                        )
+                        shared_limits = (
+                            shared_stretch_limits(first.image, second.image) if matching_units else None
+                        )
+                        modes = ["Before / after", "Blink"]
+                        if (
+                            shared_limits is not None
+                            and first.image.shape == second.image.shape
+                            and np.isfinite(first.image).any()
+                            and np.isfinite(second.image).any()
+                        ):
+                            modes.insert(0, "Swipe")
+                        mode = st.radio("Comparison view", modes, horizontal=True)
+                        if "Swipe" not in modes:
+                            st.caption("Swipe requires matching image dimensions and units, with valid pixels in both visits.")
+                        if mode == "Swipe":
+                            st.caption("Both cutouts share a color scale and retain their native pixel grids.")
+                            display_swipe(first, second, shared_limits)
+                        elif mode == "Blink":
+                            blink_key = f"blink_{first.obsid}_{second.obsid}_{selected}_{compare_index}"
+                            if blink_key not in st.session_state:
+                                st.session_state[blink_key] = 0
+                            if st.button("Show next blink frame", key=f"button_{blink_key}"):
+                                st.session_state[blink_key] = 1 - st.session_state[blink_key]
+                            blink_frame = (first, second)[st.session_state[blink_key]]
+                            st.caption(
+                                ("Both images share a color scale. " if shared_limits else "Each image uses its own color scale. ")
+                                + "Use the button to switch between observations."
+                            )
+                            display_array(
+                                blink_frame.image,
+                                f"Blink frame · {blink_frame.date_obs or 'date unavailable'} · {blink_frame.obsid or 'OBSID unavailable'}",
+                                marker=(blink_frame.cutout_pixel_x, blink_frame.cutout_pixel_y),
+                                stretch_limits=shared_limits,
+                                unit=blink_frame.bunit,
+                            )
+                        else:
+                            before_frame, after_frame = first, second
+                            chronological_pair = (
+                                np.isfinite(before_frame.mjd_obs)
+                                and np.isfinite(after_frame.mjd_obs)
+                                and before_frame.mjd_obs < after_frame.mjd_obs
+                            )
+                            before_title = (
+                                f"Before · {before_frame.date_obs or 'date unavailable'}"
+                                if chronological_pair
+                                else f"Observation A · {before_frame.date_obs or 'date unavailable'}"
+                            )
+                            after_title = (
+                                f"After · {after_frame.date_obs or 'date unavailable'}"
+                                if chronological_pair
+                                else f"Observation B · {after_frame.date_obs or 'date unavailable'}"
+                            )
+                            st.caption(
+                                ("Both panels share a color scale. " if shared_limits else "Each panel uses its own color scale. ")
+                                + "Both panels retain the original pixel grids."
+                            )
+                            left, right = st.columns(2)
+                            with left:
+                                display_array(
+                                    before_frame.image,
+                                    before_title,
+                                    unit=before_frame.bunit,
+                                    marker=(before_frame.cutout_pixel_x, before_frame.cutout_pixel_y),
+                                    stretch_limits=shared_limits,
+                                )
+                            with right:
+                                display_array(
+                                    after_frame.image,
+                                    after_title,
+                                    unit=after_frame.bunit,
+                                    marker=(after_frame.cutout_pixel_x, after_frame.cutout_pixel_y),
+                                    stretch_limits=shared_limits,
+                                )
+                        with st.expander("How to interpret the comparison"):
+                            st.write(
+                                "These views support visual inspection. Measuring motion or brightness "
+                                "requires image registration, compatible wavelengths, quality flags, "
+                                "variance and PSF checks. High-proper-motion targets also need "
+                                "coordinates propagated to each observation epoch."
+                            )
+                    else:
+                        compare_index = None
+                        warning = None
+                st.download_button(
+                    "Export observation list (CSV)",
+                    observation_csv(
+                        frames, target_name, float(ra), float(dec), selected,
+                        compare_index, warning,
+                    ),
+                    file_name="orbitalq_observations.csv",
+                    mime="text/csv",
+                )
+                st.download_button(
+                    "Download discovery report",
+                    report_text(
+                        target_name, float(ra), float(dec), frames, selected,
+                        compare_index, warning,
+                    ),
+                    file_name="orbitalq_discovery_report.md",
+                    mime="text/markdown",
+                )
+            elif not errors:
+                st.info("Upload Level 2 FITS files to begin.")
 
 else:
-    st.subheader("What orbitalQ does")
+    st.subheader("About OrbitalQ")
     st.write(
-        "orbitalQ is a target-centred interface for exploring real SPHEREx observations "
+        "OrbitalQ is a target-centred interface for exploring real SPHEREx observations "
         "and investigating how the infrared sky changes over time."
     )
     st.markdown(

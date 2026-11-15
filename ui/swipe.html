@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; color: #edf5ff; font: 14px system-ui, sans-serif; }
+.viewer {
+    border: 1px solid #344464; border-radius: 16px; padding: 10px 10px 8px;
+    background: radial-gradient(ellipse at top, #1b2a44, #0b1323 70%);
+}
+.dates {
+    display: flex; justify-content: space-between; column-gap: .8rem; margin: 0 2px .6rem;
+}
+.dates > div { min-width: 0; color: #92ebf6; overflow-wrap: anywhere; }
+.dates > div:last-child { color: #ffca82; text-align: right; }
+.dates strong { display: block; font: 600 .73rem ui-monospace, monospace; text-transform: uppercase; }
+.dates span { color: #e0eafa; font-size: .78rem; }
+.stage {
+    position: relative; width: min(100%, 650px, ${max_width}px);
+    aspect-ratio: ${width} / ${height}; margin: 0 auto;
+    overflow: hidden; border: 1px solid #425578; border-radius: 10px;
+    background: #060a13; --split: 50%; --handle: 50%;
+}
+.stage img { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+.second { clip-path: inset(0 0 0 var(--split)); }
+.divider {
+    position: absolute; left: var(--split); top: 0; bottom: 0; width: 2px;
+    background: #ffca82; box-shadow: 0 0 14px #ffca8280;
+    transform: translateX(-50%); pointer-events: none;
+}
+.handle {
+    position: absolute; top: 50%; left: var(--handle); transform: translate(-50%, -50%);
+    display: grid; place-items: center; width: 44px; height: 44px;
+    border: 1px solid #ffdcad; border-radius: 50%; background: #172235; color: #ffca82;
+    font-size: 23px; box-shadow: 0 3px 19px #0009; pointer-events: none;
+}
+input {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    opacity: 0; margin: 0; cursor: ew-resize; touch-action: none;
+}
+.stage:focus-within { outline: 3px solid #76e8f6; outline-offset: -3px; }
+.hint { margin: .45rem 0 0; color: #b8c6dc; text-align: center; font-size: .78rem; }
+</style>
+</head>
+<body>
+<section class="viewer" aria-label="SPHEREx observation comparison">
+  <div class="dates">
+    <div><strong>$label_a</strong><span>$date_a</span></div>
+    <div><strong>$label_b</strong><span>$date_b</span></div>
+  </div>
+  <div class="stage">
+    <img src="data:image/png;base64,$image_a" alt="$label_a infrared cutout">
+    <img class="second" src="data:image/png;base64,$image_b" alt="$label_b infrared cutout">
+    <div class="divider" aria-hidden="true"></div>
+    <span class="handle" aria-hidden="true">↔</span>
+    <input type="range" min="0" max="100" value="50"
+           aria-label="Comparison divider position" aria-describedby="swipe-hint">
+  </div>
+  <p class="hint" id="swipe-hint">Drag across the image or focus the divider and use the arrow keys.</p>
+</section>
+<script>
+const slider = document.querySelector("input");
+const stage = slider.parentElement;
+
+function render() {
+    const split = slider.value + "%";
+    stage.style.setProperty("--split", split);
+    stage.style.setProperty("--handle", "clamp(22px, " + split + ", calc(100% - 22px))");
+}
+
+function moveDivider(event) {
+    const bounds = slider.getBoundingClientRect();
+    slider.value = 100 * (event.clientX - bounds.left) / bounds.width;
+    render();
+}
+
+slider.addEventListener("input", render);
+slider.addEventListener("pointerdown", (event) => {
+    if (!event.isPrimary || event.button !== 0) return;
+    event.preventDefault();
+    slider.focus({ preventScroll: true });
+    slider.setPointerCapture(event.pointerId);
+    moveDivider(event);
+});
+slider.addEventListener("pointermove", (event) => {
+    if (slider.hasPointerCapture(event.pointerId)) moveDivider(event);
+});
+</script>
+</body>
+</html>
