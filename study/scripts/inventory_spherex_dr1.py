@@ -10,7 +10,8 @@ BUCKET_URL = (
     "https://nasa-irsa-spherex.s3.us-east-1.amazonaws.com/"
 )
 
-OUTPUT_FILE = "spherex_dr1_level2_inventory.csv"
+PROJECT_DIR = Path(__file__).resolve().parents[2]
+OUTPUT_FILE = PROJECT_DIR / "study" / "results" / "spherex_dr1_level2_inventory.csv"
 
 session = requests.Session()
 session.headers.update({

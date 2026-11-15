@@ -3,6 +3,7 @@ import math
 import warnings
 import requests
 import numpy as np
+from pathlib import Path
 
 from astropy.io import fits
 from astropy.wcs import WCS
@@ -27,6 +28,7 @@ HEADER_START = 2880
 HEADER_END = 65535
 
 session = requests.Session()
+RESULTS_DIR = Path(__file__).resolve().parents[2] / "study" / "results"
 
 
 def list_files(prefix, limit):
@@ -267,14 +269,14 @@ def main():
         "error",
     ]
 
-    output = "wise0855_qr3_all_detectors.csv"
+    output = RESULTS_DIR / "wise0855_qr3_all_detectors.csv"
 
     with open(output, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=columns)
         writer.writeheader()
         writer.writerows(results)
 
-    match_output = "wise0855_qr3_matches.csv"
+    match_output = RESULTS_DIR / "wise0855_qr3_matches.csv"
 
     with open(match_output, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=columns)

@@ -2,6 +2,9 @@
 from astroquery.ipac.irsa import Irsa
 from astropy.coordinates import SkyCoord
 import astropy.units as u
+from pathlib import Path
+
+OUTPUT_FILE = Path(__file__).resolve().parents[2] / "study" / "results" / "wise0855_tap_candidates.csv"
 
 # WISE 0855 supplied coordinates.
 # Reference epoch is not specified, so treat these as
@@ -38,10 +41,9 @@ try:
     print("Columns:", results.colnames)
 
     if len(results) > 0:
-        output = "wise0855_tap_candidates.csv"
-        results.write(output, format="csv", overwrite=True)
+        results.write(OUTPUT_FILE, format="csv", overwrite=True)
 
-        print("Saved:", output)
+        print("Saved:", OUTPUT_FILE)
         print("\nFirst 10 records:")
         print(results[:10])
 

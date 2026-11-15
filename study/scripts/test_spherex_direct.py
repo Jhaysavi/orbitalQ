@@ -15,7 +15,7 @@ RADIUS_DEG = 0.01
 
 COLLECTION = "spherex_qr3"
 
-OUTPUT_DIR = Path("data/inventory")
+OUTPUT_DIR = Path(__file__).resolve().parents[2] / "study" / "results"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 OUTPUT_FILE = OUTPUT_DIR / "spherex_qr3_direct_test.csv"

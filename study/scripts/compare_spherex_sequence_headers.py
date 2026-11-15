@@ -3,9 +3,12 @@ import re
 import requests
 import pandas as pd
 from astropy.io import fits
+from pathlib import Path
 
 BUCKET = "https://nasa-irsa-spherex.s3.us-east-1.amazonaws.com"
-INVENTORY = "spherex_dr1_level2_inventory.csv"
+PROJECT_DIR = Path(__file__).resolve().parents[2]
+RESULTS_DIR = PROJECT_DIR / "study" / "results"
+INVENTORY = RESULTS_DIR / "spherex_dr1_level2_inventory.csv"
 
 # A small controlled sample: one counter, four sequence tokens, six detectors.
 PERIOD = "2025W17_4B"
@@ -126,8 +129,9 @@ result = pd.DataFrame(results)
 print("=== HEADER COMPARISON ===")
 print(result.to_string(index=False))
 
-result.to_csv("spherex_sequence_header_comparison.csv", index=False)
-print("\nSaved: spherex_sequence_header_comparison.csv")
+output_path = RESULTS_DIR / "spherex_sequence_header_comparison.csv"
+result.to_csv(output_path, index=False)
+print(f"\nSaved: {output_path}")
 
 print("\n=== COUNTS BY TOKEN ===")
 if "status" in result:

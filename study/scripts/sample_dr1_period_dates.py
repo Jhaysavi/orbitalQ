@@ -13,8 +13,10 @@ from astropy.time import Time
 from erfa import ErfaWarning
 
 
-INPUT_FILE = "spherex_dr1_level2_inventory.csv"
-OUTPUT_FILE = "spherex_dr1_period_dates.csv"
+PROJECT_DIR = Path(__file__).resolve().parents[2]
+RESULTS_DIR = PROJECT_DIR / "study" / "results"
+INPUT_FILE = RESULTS_DIR / "spherex_dr1_level2_inventory.csv"
+OUTPUT_FILE = RESULTS_DIR / "spherex_dr1_period_dates.csv"
 
 BUCKET_URL = (
     "https://nasa-irsa-spherex.s3.us-east-1.amazonaws.com/"

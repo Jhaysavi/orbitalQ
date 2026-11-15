@@ -37,7 +37,7 @@ python -m pip install -r requirements-milestone-01.txt
 ## 4. Run the WISE 0855 test
 
 ```powershell
-python validate_spherex.py --target "WISE 0855" --ra 133.795129 --dec -7.245147 --bandpass SPHEREx-D2 --size 0.03 --max-downloads 3
+python study/scripts/validate_spherex.py --target "WISE 0855" --ra 133.795129 --dec -7.245147 --bandpass SPHEREx-D2 --size 0.03 --max-downloads 3
 ```
 
 The coordinates are the challenge coordinates converted from sexagesimal to decimal degrees.

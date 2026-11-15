@@ -1,48 +1,18 @@
-# Orbital Eye
-
-An observation viewer for **Planet X and SPHEREx**, NASA Space Apps Challenge 2026. Compare two real SPHEREx images of the same sky field, inspect the expected target position and open the original FITS.
-
-## Explore an observation pair
-
-Start with Barnard’s Star. Alternate the dates, compare the bright source with the surrounding stars, and reveal the expected catalog position. The evidence panel shows the catalog-predicted displacement for the selected dates. It does not represent a measurement from the images.
-
-Use **Copy comparison link** to share the exact pair or **Download evidence CSV** to export the dates, detector, predicted displacement, and links to the original FITS. The WISE 0855 example shows a faint target whose identification is inconclusive in the individual previews.
-
-## Generate the viewer
-
-Use Python 3.11 or 3.12 in a virtual environment.
-
-```powershell
-python -m pip install -r requirements-viewer.txt
-python validate_spherex.py --target Barnard --ra 269.4515 --dec 4.769 --bandpass SPHEREx-D1 --size 0.08 --max-downloads 8
-python build_viewer.py --barnard data/inventory/Barnard_manifest.json
-```
-
-Open `dist/index.html` in your browser. The output embeds its image frames and works offline after generation. For a public demo, serve it from any static host. Start with the earliest and latest frames, switch to **Side by side**, then use **Expected position** to locate the target.
-
-### Add WISE 0855
-
-```powershell
-python validate_spherex.py --target "WISE 0855" --ra 133.761 --dec -7.242 --bandpass SPHEREx-D6 --size 0.10 --max-downloads 8
-python build_viewer.py --barnard data/inventory/Barnard_manifest.json --wise-0855 data/inventory/WISE_0855_manifest.json
-```
-
-The wider field is centered near the target's approximate SPHEREx-era position. To try D5, use a different target label during retrieval so that the D6 manifest is preserved. Add `?target=wise_0855` to a hosted viewer link to open that field directly.
-
-## Read the evidence
-
-- Each case needs at least two distinct IRSA observation times with overlapping image coverage. If the dates are too close for visible motion, inspect the inventory CSV and choose observations further apart before presenting the result.
-- The builder reprojects the FITS IMAGE extension to a common WCS grid and applies one display stretch per case. The display is for visual comparison. Filter flags, bandpass variation, PSF, uncertainties and parallax need separate treatment for scientific measurements.
-- The overlay is an approximate catalog position propagated with proper motion. A marker or a downloaded image alone does not establish detection. Report WISE 0855 as inconclusive if the images do not clearly support identification.
-- Original data and timestamps come from NASA/IPAC IRSA. [Data documentation](https://irsa.ipac.caltech.edu/spherex-archive-documentation/spherex-data-access/) and [retrieval milestone](README-MILESTONE-01.md).
-=======
 # orbitalQ — Explore the Changing Infrared Universe
 
-Runnable Streamlit MVP for inspecting genuine NASA/IPAC IRSA SPHEREx data.
+orbitalQ is a lightweight Streamlit application for exploring genuine
+NASA/IPAC IRSA SPHEREx data. It separates a fast All-Sky Cube preview from a
+time-ordered viewer for Level 2 Spectral Image FITS observations.
 
-## Run
+The application is exploratory: a visible change is not a discovery claim.
+Any candidate motion or variability needs WCS registration, compatible
+wavelengths, quality masks, uncertainty estimates, PSF/background checks and
+independent validation.
 
-Use the existing environment; it is not necessary to recreate it:
+## Run the application
+
+Use the existing virtual environment when available. From the repository
+root:
 
 ```bash
 source .venv/bin/activate
@@ -50,26 +20,60 @@ python -m pip install -r requirements.txt
 streamlit run app.py
 ```
 
-The **Real DR1 sky preview** reads a small section of the public SPHEREx DR1
-All-Sky Cube through the verified public S3 URL. Its 102 planes are wavelengths,
-not dates. The **Compare Level 2 visits** tab accepts genuine Level 2 MEF FITS
-files, extracts a target-centred WCS cutout, reads `DATE-OBS`, `MJD-OBS`,
-`OBSID`, detector, release, processing version, units, `FLAGS` and `VARIANCE`,
-and sorts by actual observation time. It never substitutes a synthetic image
-when archive access fails.
+The app can display a small real SPHEREx DR1 All-Sky Cube cutout from the
+public cloud object and can load genuine Level 2 MEF FITS files from upload or
+the local cache. It reads observation metadata from FITS headers, including
+`DATE-OBS`, `MJD-OBS`, `OBSID`, detector, units, WCS, `FLAGS` and `VARIANCE`.
+No synthetic image is substituted when retrieval fails.
 
-The current archive route for Level 2 is an upload/cached-file workflow. The
-repository contains preserved DR1/QR3 inventories and research scripts for
-future small, provenance-preserving archive discovery; no full survey scan is
-performed by the app.
-
-## Tests
+## Tests and checks
 
 ```bash
 .venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python -m compileall -q app.py core tests study/scripts
 ```
 
-Tests use a small FITS fixture to exercise metadata and WCS parsing. Archive
-availability must be checked separately because public endpoints can be
-temporarily unavailable. See [README_ORBITALQ.md](README_ORBITALQ.md) for the
-project’s existing scientific rationale and official references.
+The unit tests are in [tests/](./tests/). Network archive probes and research
+scripts are intentionally not part of the automated test suite; see
+[study/](./study/) for their inputs, outputs and limitations.
+
+## Repository map
+
+| Path | Purpose |
+| --- | --- |
+| `app.py` | Streamlit user interface |
+| `core/` | WCS, FITS, provenance and scientific validation helpers |
+| `config/` | Target presets and other small, reviewable configuration |
+| `data/` | Local cutouts, previews, manifests and cache placeholders |
+| `tests/` | Fast deterministic unit tests |
+| `study/scripts/` | Archive experiments, inventory tools and coordinate studies |
+| `study/results/` | Generated study tables and saved archive responses |
+| `scripts/` | Reusable retrieval/deployment utilities |
+| `docs/` | Scientific method, source references and maintenance notes |
+
+Large inventories, FITS files, caches and generated study products stay local
+and are ignored by Git. Their provenance should be recorded in a manifest or
+in the study notes rather than committed to the repository.
+
+## Scientific data policy
+
+- Use SPHEREx **DR1** for Surveys 1–2 and **QR3** for Surveys 3–4. DR1 and
+  QR3 supersede QR2 for new work.
+- The All-Sky Cube has 102 nominal spectral channels. Those channels are
+  wavelengths, not observation dates.
+- Temporal ordering uses separate Level 2 observations and their actual
+  `DATE-OBS`, `MJD-OBS` and `OBSID` metadata.
+- Comparisons must check wavelength/bandpass compatibility, detector and
+  processing version, WCS alignment, `FLAGS`, `VARIANCE`, PSF/ePSF and
+  background/calibration differences.
+- Target coordinates with proper motion must be propagated to the observation
+  epoch when reference astrometry is available. The challenge coordinate for
+  WISE 0855 is not silently treated as valid at every epoch.
+
+Read [docs/scientific-methods.md](./docs/scientific-methods.md) for the full
+method and source list, and [study/README.md](./study/README.md) for the
+research scripts, including
+[sample_dr1_period_dates.py](./study/scripts/sample_dr1_period_dates.py).
+The older project brief remains available in
+[README_ORBITALQ.md](./README_ORBITALQ.md), and the original retrieval notes
+in [README-MILESTONE-01.md](./README-MILESTONE-01.md).

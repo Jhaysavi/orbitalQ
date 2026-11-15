@@ -27,3 +27,10 @@ dist/
 # Large generated/research inventories stay local; source scripts remain tracked.
 spherex_dr1_level2_inventory.csv
 spherex_observation_groups.csv
+study/results/spherex_dr1_level2_inventory.csv
+study/results/spherex_observation_groups.csv
+
+# Study outputs are reproducible research artefacts, not application source.
+study/results/*.fits
+study/results/*.fit
+study/results/*.fits.gz

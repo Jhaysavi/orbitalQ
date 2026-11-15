@@ -1,5 +1,8 @@
 
 import requests
+from pathlib import Path
+
+OUTPUT_FILE = Path(__file__).resolve().parents[2] / "study" / "results" / "spherex_explorer_response.html"
 
 URL = "https://irsa.ipac.caltech.edu/applications/spherex/"
 
@@ -30,10 +33,10 @@ try:
 
     response.raise_for_status()
 
-    with open("spherex_explorer_response.html", "w", encoding="utf-8") as f:
+    with OUTPUT_FILE.open("w", encoding="utf-8") as f:
         f.write(response.text)
 
-    print("\nResponse saved to spherex_explorer_response.html")
+    print(f"\nResponse saved to {OUTPUT_FILE}")
     print("Open that file in your browser to inspect the response.")
 
 except Exception as error:

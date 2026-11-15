@@ -2,6 +2,7 @@
 import csv
 import re
 import warnings
+from pathlib import Path
 
 from collections import Counter
 from datetime import datetime, timedelta
@@ -13,7 +14,8 @@ from astropy.time import Time
 from erfa import ErfaWarning
 
 
-INPUT_FILE = "spherex_dr1_level2_inventory.csv"
+PROJECT_DIR = Path(__file__).resolve().parents[2]
+INPUT_FILE = PROJECT_DIR / "study" / "results" / "spherex_dr1_level2_inventory.csv"
 
 # Published WISE 0855 astrometry
 reference_position = SkyCoord(

@@ -1,5 +1,6 @@
 
 import requests
+from pathlib import Path
 from astropy.table import Table
 from io import BytesIO
 
@@ -18,6 +19,7 @@ COLLECTIONS = [
 ]
 
 URL = "https://irsa.ipac.caltech.edu/SIA"
+RESULTS_DIR = Path(__file__).resolve().parents[2] / "study" / "results"
 
 for collection in COLLECTIONS:
     print(f"\nSearching {collection}...")
@@ -48,7 +50,7 @@ for collection in COLLECTIONS:
         print("Available columns:", table.colnames)
 
         if len(table):
-            output = f"{collection}_wise0855_candidates.csv"
+            output = RESULTS_DIR / f"{collection}_wise0855_candidates.csv"
             table.write(output, format="csv", overwrite=True)
             print("Saved:", output)
 

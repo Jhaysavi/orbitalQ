@@ -3,8 +3,8 @@ ORBITAL EYE — Milestone 01
 Search the public SPHEREx DR1 + QR3 archive at NASA/IPAC IRSA,
 download up to N cutouts for one sky position, and create PNG previews.
 
-Example (PowerShell):
-python validate_spherex.py --target "WISE 0855" --ra 133.795129 --dec -7.245147 --bandpass SPHEREx-D2 --max-downloads 3
+Example:
+python study/scripts/validate_spherex.py --target "WISE 0855" --ra 133.795129 --dec -7.245147 --bandpass SPHEREx-D2 --max-downloads 3
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ from astropy.utils.data import conf
 from astroquery.ipac.irsa import Irsa
 
 
-PROJECT_DIR = Path(__file__).resolve().parent
+PROJECT_DIR = Path(__file__).resolve().parents[2]
 DATA_DIR = PROJECT_DIR / "data"
 CUTOUT_DIR = DATA_DIR / "cutouts"
 PREVIEW_DIR = DATA_DIR / "previews"

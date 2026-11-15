@@ -1,10 +1,12 @@
 
 import csv
 import requests
+from pathlib import Path
 from xml.etree import ElementTree as ET
 
 BASE = "https://nasa-irsa-spherex.s3.us-east-1.amazonaws.com"
 ROOT = "qr3/level2/"
+PROJECT_DIR = Path(__file__).resolve().parents[2]
 
 session = requests.Session()
 
@@ -128,7 +130,7 @@ def main():
                     f"{count} FITS files"
                 )
 
-    output = "spherex_level2_inventory.csv"
+    output = PROJECT_DIR / "study" / "results" / "spherex_level2_inventory.csv"
 
     columns = [
         "week",
