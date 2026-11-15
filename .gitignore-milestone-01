@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.streamlit/
+data/cutouts/*
+data/previews/*
+data/inventory/*
+!data/cutouts/.gitkeep
+!data/previews/.gitkeep
+!data/inventory/.gitkeep
