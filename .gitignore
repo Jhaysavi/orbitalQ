@@ -22,6 +22,7 @@ data/manifests/*
 !data/previews/.gitkeep
 !data/inventory/.gitkeep
 !data/manifests/.gitkeep
+dist/
 
 # Large generated/research inventories stay local; source scripts remain tracked.
 spherex_dr1_level2_inventory.csv
