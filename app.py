@@ -1,7 +1,7 @@
 import io
 import json
 import csv
-from base64 import b64decode
+from base64 import b64decode, b64encode
 from html import escape
 from pathlib import Path
 from string import Template
@@ -427,11 +427,145 @@ def read_packaged_observations():
     return json.loads(block.split("</script>", 1)[0])
 
 
+def show_time_lapse(frames):
+    """Play the dated frames at a user-controlled speed in the browser."""
+    payload = json.dumps(
+        [{key: frame[key] for key in ("date", "mjd", "image")} for frame in frames],
+        allow_nan=False,
+    ).replace("<", r"\u003c")
+    markup = """
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; color: #edf5ff; font: 14px system-ui, sans-serif; }
+main { border: 1px solid #344464; border-radius: 14px; background: #0b1323; padding: .65rem; }
+header { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .3rem 1rem; padding: .25rem .2rem .55rem; }
+#date { color: #8eeafa; font-weight: 650; }
+#elapsed { color: #ffca82; }
+#view { width: 100%; height: clamp(210px, 55vmin, 350px); display: block; object-fit: contain; image-rendering: pixelated; background: #050913; border-radius: 8px; }
+.controls { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; margin-top: .55rem; }
+button, select { font: inherit; color: #edf5ff; background: #14263d; border: 1px solid #547395; border-radius: 7px; padding: .3rem .55rem; }
+button { cursor: pointer; }
+button:disabled { opacity: .55; cursor: default; }
+:focus-visible { outline: 2px solid #76e8f6; outline-offset: 2px; }
+#play { background: #183a49; }
+#seek { width: 100%; accent-color: #76e8f6; margin: .55rem 0 .15rem; }
+footer { display: flex; justify-content: space-between; gap: .5rem; padding: 0 .2rem; font-size: .8rem; color: #b8c6dc; }
+</style>
+</head>
+<body>
+<main aria-label="SPHEREx observation time lapse">
+  <header><span id="date"></span><span id="elapsed"></span></header>
+  <img id="view" alt="SPHEREx observation cutout">
+  <div class="controls">
+    <button type="button" id="previous" aria-label="Previous observation">←</button>
+    <button type="button" id="play">Play time lapse</button>
+    <button type="button" id="next" aria-label="Next observation">→</button>
+    <label for="speed">Speed</label>
+    <select id="speed">
+      <option value="2000">0.5×</option><option value="1000" selected>1×</option><option value="500">2×</option>
+    </select>
+  </div>
+  <input id="seek" type="range" min="0" value="0" aria-label="Jump to observation">
+  <footer><span id="step"></span><span>Actual elapsed time shown above</span></footer>
+</main>
+<script id="frames" type="application/json">$payload</script>
+<script>
+const get = (id) => document.getElementById(id);
+const frames = JSON.parse(get("frames").textContent);
+const last = frames.length - 1;
+const seek = get("seek");
+const play = get("play");
+const speed = get("speed");
+let index = 0;
+let timer = null;
+seek.max = last;
+
+function elapsed(days) {
+    if (days >= 1) return days.toFixed(2) + " days";
+    if (days >= 1 / 24) return (days * 24).toFixed(2) + " hours";
+    if (days >= 1 / 1440) return (days * 1440).toFixed(1) + " min";
+    return (days * 86400).toFixed(1) + " sec";
+}
+function show() {
+    const frame = frames[index];
+    get("view").src = frame.image;
+    get("date").textContent = frame.date;
+    get("elapsed").textContent = index === 0 ? "First visit" : "+" + elapsed(frame.mjd - frames[0].mjd) + " since first visit";
+    get("step").textContent = "Visit " + (index + 1) + " / " + frames.length;
+    seek.value = index;
+    seek.setAttribute("aria-valuetext", frame.date + ", visit " + (index + 1));
+    get("previous").disabled = index === 0;
+    get("next").disabled = index === last;
+}
+function pause() {
+    if (timer !== null) window.clearInterval(timer);
+    timer = null;
+    play.textContent = "Play time lapse";
+}
+function start() {
+    play.textContent = "Pause";
+    timer = window.setInterval(() => {
+        index += 1;
+        show();
+        if (index === last) pause();
+    }, Number(speed.value));
+}
+function jump(next) {
+    pause();
+    index = Math.max(0, Math.min(last, next));
+    show();
+}
+play.addEventListener("click", () => {
+    if (timer !== null) { pause(); return; }
+    if (index === last) jump(0);
+    start();
+});
+get("previous").addEventListener("click", () => jump(index - 1));
+get("next").addEventListener("click", () => jump(index + 1));
+seek.addEventListener("input", () => jump(Number(seek.value)));
+speed.addEventListener("change", () => {
+    if (timer !== null) { pause(); start(); }
+});
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden) pause();
+});
+show();
+</script>
+</body>
+</html>
+"""
+    components.html(Template(markup).substitute(payload=payload), height=505)
+    st.caption("Playback gives each visit the same screen time. Use the timestamps to judge the actual gaps.")
+
+
+def build_time_lapse_frames(observations):
+    """Build previews with a single display stretch across the sequence."""
+    limits = shared_stretch_limits(*(frame.image for frame in observations))
+    result = []
+    for frame in observations:
+        buffer = io.BytesIO()
+        plt.imsave(
+            buffer, frame.image, format="png", origin="lower", cmap="inferno",
+            vmin=limits[0], vmax=limits[1],
+        )
+        result.append({
+            "date": frame.date_obs or f"MJD {frame.mjd_obs:.5f}",
+            "mjd": float(frame.mjd_obs),
+            "image": "data:image/png;base64," + b64encode(buffer.getvalue()).decode("ascii"),
+        })
+    return result
+
+
 def show_packaged_examples():
     st.subheader("Compare real observations across months")
     st.caption(
         "These SPHEREx cutouts are already included with OrbitalQ. "
-        "Choose two visits and drag the divider or play Auto-Blink."
+        "Play the dated sequence or select two visits for closer inspection."
     )
     try:
         cases = {case["name"]: case for case in read_packaged_observations()
@@ -446,6 +580,18 @@ def show_packaged_examples():
     name = st.selectbox("Example target", list(cases))
     case = cases[name]
     frames = sorted(case["frames"], key=lambda item: item["mjd"])
+    if st.radio("Example view", ["Time lapse", "Swipe / Auto-Blink"], horizontal=True) == "Time lapse":
+        show_observation_interval(
+            frames[0]["date"], frames[0]["mjd"], frames[-1]["date"], frames[-1]["mjd"],
+        )
+        show_time_lapse(frames)
+        with st.expander("Sources for each visit"):
+            for frame in frames:
+                st.link_button(frame["date"], frame["fits"])
+            if case.get("snapshot"):
+                st.markdown(f"[Processed cutout provenance]({case['snapshot']})")
+        return
+
     first_slot, second_slot = st.columns(2)
     first_index = first_slot.selectbox(
         "First visit", range(len(frames) - 1), format_func=lambda i: frames[i]["date"],
@@ -513,7 +659,7 @@ if view == "Home":
             st.markdown("### See how a field changes over time")
             st.write(
                 "Choose Barnard’s Star or WISE 0855 and compare dated observations "
-                "with a draggable divider. The examples are ready to open."
+                "with a time lapse or draggable divider. The examples are ready to open."
             )
             st.button(
                 "Open real examples", type="primary", on_click=open_view,
@@ -1064,9 +1210,6 @@ elif view == "Compare Level 2 visits":
                         if warning:
                             st.warning(f"Visual comparison only: {warning}. Check the metadata before interpreting changes.")
                         first, second = (frames[index] for index in sorted((selected, compare_index)))
-                        show_observation_interval(
-                            first.date_obs, first.mjd_obs, second.date_obs, second.mjd_obs,
-                        )
                         matching_units = (
                             first.bunit == second.bunit
                             and first.bunit.strip().lower() not in {"", "unknown"}
@@ -1082,10 +1225,35 @@ elif view == "Compare Level 2 visits":
                             and np.isfinite(second.image).any()
                         ):
                             modes.insert(0, "Swipe")
+                        sequence = [
+                            visit for visit in frames
+                            if visit.detector and visit.detector == frame.detector
+                            and visit.bunit == frame.bunit
+                            and visit.bunit.strip().lower() not in {"", "unknown"}
+                            and visit.image.shape == frame.image.shape
+                            and np.isfinite(visit.mjd_obs)
+                            and np.isfinite(visit.image).any()
+                        ]
+                        by_time = {visit.mjd_obs: visit for visit in sequence}
+                        sequence = [by_time[mjd] for mjd in sorted(by_time)]
+                        if len(sequence) > 1:
+                            modes.append("Time lapse")
                         mode = st.radio("Comparison view", modes, horizontal=True)
                         if "Swipe" not in modes:
                             st.caption("Swipe requires matching image dimensions and units, with valid pixels in both visits.")
-                        if mode == "Swipe":
+                        boundary_a, boundary_b = (
+                            (sequence[0], sequence[-1]) if mode == "Time lapse" else (first, second)
+                        )
+                        show_observation_interval(
+                            boundary_a.date_obs, boundary_a.mjd_obs, boundary_b.date_obs, boundary_b.mjd_obs,
+                        )
+                        if mode == "Time lapse":
+                            st.caption(
+                                f"{len(sequence)} visits from the selected detector with shared units "
+                                "and display scale. The cutouts retain their native pixel grids."
+                            )
+                            show_time_lapse(build_time_lapse_frames(sequence))
+                        elif mode == "Swipe":
                             st.caption("Both cutouts share a color scale and retain their native pixel grids.")
                             display_swipe(first, second, shared_limits)
                         elif mode == "Blink":

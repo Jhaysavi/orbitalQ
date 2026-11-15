@@ -66,7 +66,7 @@ def render_about(load_example):
   <h3 id="getting-started">Your first observation</h3>
   <ol class="oq-about-grid">
     <li><h4>Open the real example</h4><p>The app loads two public images and shows its progress as it checks that each exposure covers the example field.</p></li>
-    <li><h4>Compare the images</h4><p>Drag Swipe across the image, switch between visits with Blink, or place the images side by side. Look for points that seem to move relative to their neighbours.</p></li>
+    <li><h4>Compare the images</h4><p>Drag Swipe across the image, switch between visits with Blink, or play Time lapse to step through dated visits. Look for points that seem to move relative to their neighbours.</p></li>
     <li><h4>Follow the evidence</h4><p>Open Observation timeline to see dates and detectors. Use Quality and provenance to inspect data flags and file sources. You can export the observation list as a CSV.</p></li>
   </ol>
 </section>

@@ -21,3 +21,5 @@ The WISE 0855 study links to a [Pan-STARRS optical cutout](https://ps1images.sts
 ### Ready-to-view examples
 
 The Streamlit navigation includes **Ready-to-view examples**. It reads the packaged Barnard’s Star and WISE 0855 cutouts from the repository, then shows their visit dates, elapsed time, Swipe and Auto-Blink controls, and FITS provenance. Comparing the packaged visits requires no remote FITS download. The example renderer and the observation interval are implemented directly in `app.py`.
+
+**Time lapse** offers playback, speed, previous and next controls, and direct jumps on the observation timeline. It shows the real time elapsed since the first visit. The packaged examples use their stored images. The Level 2 workspace can also play uploaded or archive-loaded visits with distinct timestamps and matching detector, units, and cutout dimensions. The view uses a shared display stretch and native pixel grids.
