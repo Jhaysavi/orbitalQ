@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orbital Eye · SPHEREx observation explorer</title>
+<style>
+:root{color-scheme:dark;font:100%/1.6 system-ui,sans-serif;background:#10121a;color:#edf0fa}
+*{box-sizing:border-box}
+body{margin:0}
+main{max-width:72rem;margin:auto;padding:clamp(1rem,4vw,3rem)}
+header{margin-bottom:1.5rem}
+h1{font-size:clamp(2rem,6vw,3.6rem);line-height:1.1;margin:0}
+p{max-width:70ch}
+fieldset{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;border:1px solid #414960;border-radius:.75rem;padding:1rem;margin:0 0 1rem}
+button,select{font:inherit;color:inherit;background:#282f45;border:1px solid #697598;border-radius:.4rem;padding:.42rem .7rem;max-width:100%}
+button:disabled{opacity:.5}
+a{color:#acd4ff}
+:focus-visible{outline:3px solid #fbc677;outline-offset:3px}
+#panels{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(min(100%,20rem),1fr))}
+figure{margin:0;padding:.7rem;background:#191e2c;border-radius:.75rem;min-width:0}
+.exposure{position:relative;background:#08090f;width:100%;margin-bottom:.5rem}
+img{display:block;width:100%;height:auto}
+.marker{pointer-events:none;position:absolute;width:1.15rem;height:1.15rem;border:2px solid #8dffdf;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 1px #141c21}
+figcaption{overflow-wrap:anywhere}
+#frame-status{min-height:1.6em}
+.muted{color:#c3cada}
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>Orbital Eye</h1>
+<p>Compare real infrared images of the same patch of sky from NASA’s SPHEREx mission.</p>
+</header>
+<p id="empty" hidden>No observations have been packaged yet. Follow the repository README to generate a viewer from NASA/IPAC IRSA cutouts.</p>
+<section id="workspace" hidden aria-label="Observation comparison">
+<fieldset>
+<legend>Compare observation dates</legend>
+<label>Target <select id="target"></select></label>
+<label>Earlier frame <select id="first"></select></label>
+<label>Later frame <select id="second"></select></label>
+<button id="blink" type="button">Alternate image</button>
+<button id="layout" type="button" aria-pressed="false">Side by side</button>
+<label><input id="overlay" type="checkbox"> Expected position</label>
+</fieldset>
+<p id="frame-status" role="status"></p>
+<div id="panels"></div>
+<p id="coverage" class="muted"></p>
+<h2>Observation sources</h2>
+<p id="details"></p>
+<p><a id="catalog">Astrometry reference</a> · <a href="https://irsa.ipac.caltech.edu/spherex-archive-documentation/spherex-data-access/">NASA/IPAC IRSA archive</a></p>
+<p class="muted">Frames use a common sky grid and shared brightness stretch. Blank pixels lie outside their common coverage. The expected position is an approximate overlay based on proper motion and excludes parallax. Use the original FITS for quantitative analysis.</p>
+</section>
+</main>
+<script id="case-data" type="application/json"><!-- CASE_DATA --></script>
+<script>
+const byId = id => document.getElementById(id);
+const bindings = ["target", "first", "second", "blink", "layout", "overlay", "panels", "coverage", "details", "catalog"];
+const ui = Object.fromEntries(bindings.map(key => [key, byId(key)]));
+const raw = byId("case-data").textContent.trim();
+const cases = raw.startsWith("[") ? JSON.parse(raw) : [];
+let activeFrame = "first";
+
+function option(label, value) {
+    return new Option(label, value);
+}
+
+function makeExposure(frame, name) {
+    const figure = document.createElement("figure");
+    const exposure = document.createElement("div");
+    exposure.className = "exposure";
+    const img = document.createElement("img");
+    img.src = frame.image;
+    img.alt = "SPHEREx infrared observation of " + name + ", " + frame.date;
+    exposure.append(img);
+    if (ui.overlay.checked && frame.marker) {
+        const marker = document.createElement("span");
+        marker.className = "marker";
+        marker.setAttribute("aria-hidden", "true");
+        marker.style.left = frame.marker[0] * 100 + "%";
+        marker.style.top = frame.marker[1] * 100 + "%";
+        exposure.append(marker);
+    }
+    const caption = document.createElement("figcaption");
+    caption.append(frame.date + " · " + frame.obsid + " · ");
+    const link = document.createElement("a");
+    link.href = frame.fits;
+    link.textContent = "Original FITS";
+    caption.append(link);
+    figure.append(exposure, caption);
+    return figure;
+}
+
+function render() {
+    const current = cases[Number(ui.target.value)];
+    const earlier = current.frames[Number(ui.first.value)];
+    const later = current.frames[Number(ui.second.value)];
+    const sideBySide = ui.layout.getAttribute("aria-pressed") === "true";
+    const frames = sideBySide ? [earlier, later] : [activeFrame === "first" ? earlier : later];
+    ui.panels.replaceChildren(...frames.map(frame => makeExposure(frame, current.name)));
+    ui.blink.disabled = sideBySide;
+    const days = (later.mjd - earlier.mjd).toFixed(1);
+    byId("frame-status").textContent = (sideBySide ? "Showing both dates" : "Showing " + frames[0].date) + " · " + days + " days between frames";
+    ui.coverage.textContent = ui.overlay.checked && frames.some(frame => !frame.marker)
+        ? "The expected position falls outside the common coverage in at least one displayed frame."
+        : ui.overlay.checked ? "The ring marks the expected position." : "";
+    ui.details.textContent = current.name + " · " + current.detector + " · shared display range " +
+        current.min.toPrecision(3) + " to " + current.max.toPrecision(3) + " " + current.unit;
+    ui.catalog.href = current.source;
+}
+
+function selectTarget() {
+    const frames = cases[Number(ui.target.value)].frames;
+    const earlier = frames.flatMap((frame, index) =>
+        frame.mjd < frames.at(-1).mjd ? [option(frame.date, index)] : []);
+    ui.first.replaceChildren(...earlier);
+    selectEarlier();
+}
+
+function selectEarlier() {
+    const frames = cases[Number(ui.target.value)].frames;
+    const firstDate = frames[Number(ui.first.value)].mjd;
+    const later = frames.flatMap((frame, index) => frame.mjd > firstDate ? [option(frame.date, index)] : []);
+    ui.second.replaceChildren(...later);
+    ui.second.selectedIndex = later.length - 1;
+    activeFrame = "first";
+    render();
+}
+
+if (cases.length) {
+    byId("workspace").hidden = false;
+    const requested = new URLSearchParams(location.search).get("target");
+    ui.target.replaceChildren(...cases.map((item, index) => option(item.name, index)));
+    ui.target.selectedIndex = Math.max(0, cases.findIndex(item => item.key === requested));
+    ui.target.addEventListener("change", selectTarget);
+    ui.first.addEventListener("change", selectEarlier);
+    ui.second.addEventListener("change", render);
+    ui.overlay.addEventListener("change", render);
+    ui.blink.addEventListener("click", () => {
+        activeFrame = activeFrame === "first" ? "second" : "first";
+        render();
+    });
+    ui.layout.addEventListener("click", () => {
+        const enabled = ui.layout.getAttribute("aria-pressed") === "true";
+        ui.layout.setAttribute("aria-pressed", String(!enabled));
+        render();
+    });
+    selectTarget();
+} else {
+    byId("empty").hidden = false;
+}
+</script>
+</body>
+</html>
