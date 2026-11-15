@@ -20,6 +20,7 @@ from core.coordinates import is_inside_image, pixel_scale_arcsec, world_to_pixel
 from core.fits_reader import read_level2
 from core.provenance import report_text
 from core.validation import chronological, comparison_warning
+from ui.about import render_about
 from ui.presentation import FAVICON_PATH, display_swipe, render_header
 
 st.set_page_config(
@@ -376,6 +377,7 @@ def observation_csv(frames, target_name, ra, dec, selected_index=None, compariso
 view = st.radio(
     "Explorer view", ["Real DR1 sky preview", "Compare Level 2 visits", "About OrbitalQ"],
     horizontal=True,
+    key="explorer_view",
 )
 
 if view == "Real DR1 sky preview":
@@ -836,7 +838,7 @@ elif view == "Compare Level 2 visits":
                             )
                         )
                 if len(frames) > 1:
-                    with st.expander("Available visit sequence"):
+                    with st.expander("Observation timeline"):
                         st.dataframe(
                             [{
                                 "date_obs": f.date_obs, "mjd_obs": f.mjd_obs,
@@ -975,25 +977,4 @@ elif view == "Compare Level 2 visits":
                 st.info("Upload Level 2 FITS files to begin.")
 
 else:
-    st.subheader("About OrbitalQ")
-    st.write(
-        "OrbitalQ is a target-centred interface for exploring real SPHEREx observations "
-        "and investigating how the infrared sky changes over time."
-    )
-    st.markdown(
-        """
-        **Scientific rule:** spectral channels are wavelengths; observation dates come
-        from separate Level 2 exposures.
-
-        **Current application:** a real DR1 All-Sky Cube cutout, optional bounded archive
-        browsing through public S3 folders, a verified real-data example sequence,
-        direct public FITS URL loading, and Level 2 FITS uploads. S3 folder browsing
-        is not a coordinate coverage search; every loaded file is checked with its
-        own WCS. The cube preview is spectral context, not a temporal movie.
-        """
-    )
-    st.markdown(
-        "[SPHEREx DR1 overview](https://irsa.ipac.caltech.edu/data/SPHEREx/docs/overview_dr1.html) · "
-        "[Data products](https://caltech-ipac.github.io/spherex-archive-documentation/spherex-data-products/) · "
-        "[Data releases](https://irsa.ipac.caltech.edu/spherex-archive-documentation/spherex-data-releases/)"
-    )
+    render_about(activate_demo_sequence)

@@ -11,3 +11,5 @@ The hero uses the packaged Barnard’s Star cutout already distributed with the 
 Presentation code and assets are in [`ui/`](../ui/). [`app.py`](../app.py) handles Streamlit controls, archive selection, and analysis views. Scientific helpers remain in [`core/`](../core/).
 
 The root [HTML prototype](../viewer.html) uses illustrative observations for design exploration. The [static viewer](../dist/index.html) packages real observations in its case-data script. The builder replaces that script with data from validated FITS manifests.
+
+**About OrbitalQ** includes a public getting-started guide, two exercises, and team links. The guide can open the spectral preview or load the built-in pair directly in the Level 2 workspace. See [`ui/about.py`](../ui/about.py) for its content.

@@ -104,3 +104,44 @@
 .oq-brand { display: flex; align-items: center; gap: .65rem; min-width: 0; margin: .5rem 0 .85rem; }
 .oq-brand img { width: clamp(48px, 8vw, 80px); height: auto; flex: none; }
 .oq-brand h1 { margin: 0; font-size: clamp(2.1rem, 5.5vw, 5.2rem); }
+
+.oq-about-intro {
+    padding: clamp(1.2rem, 4vw, 2.5rem);
+    border: 1px solid var(--oq-border);
+    border-radius: 18px;
+    background: linear-gradient(125deg, #131e34, #142e3b);
+    margin-bottom: .45rem;
+}
+.oq-about-intro h2 { font-size: clamp(1.8rem, 4vw, 3rem); padding: .25rem 0; }
+.oq-about-intro p { margin: 0; max-width: 58ch; color: var(--oq-muted); }
+.oq-about-section { margin-top: .75rem; }
+.oq-about-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .85rem;
+    padding: 0 !important;
+    margin: .5rem 0;
+    list-style: none;
+    counter-reset: oq-steps;
+}
+.oq-about-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.oq-about-grid > * {
+    border: 1px solid var(--oq-border);
+    border-radius: 13px;
+    background: var(--oq-panel);
+    padding: 1rem;
+}
+.oq-about-grid > li::before {
+    counter-increment: oq-steps;
+    content: "0" counter(oq-steps);
+    font: 600 .8rem ui-monospace, monospace;
+    color: var(--oq-cyan);
+}
+.oq-about-grid h4 { padding: .35rem 0; }
+.oq-about-grid p { margin: 0; color: var(--oq-muted); }
+.oq-about-grid > a { display: grid; gap: .3rem; color: var(--oq-text); text-decoration: none; }
+.oq-about-grid > a:hover, .oq-about-grid > a:focus-visible { border-color: var(--oq-cyan); }
+.oq-about-grid > a span { color: var(--oq-cyan); font-size: .84rem; }
+@media (max-width: 760px) {
+    .oq-about-grid { grid-template-columns: minmax(0, 1fr); }
+}
