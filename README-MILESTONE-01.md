@@ -1,12 +1,13 @@
-# ORBITAL EYE — Milestone 01
+# orbitalQ
 
-This starter retrieves real SPHEREx cutouts from NASA/IPAC IRSA using the official TAP workflow.
+## Milestone 01 — SPHEREx Data Retrieval and Validation
 
-## Requirements
-- Windows 10/11
-- Python 3.10 or newer (64-bit recommended)
-- VS Code with the Python extension
-- Internet access
+An astronomical data exploration project using NASA's
+SPHEREx infrared observations.
+
+Project objective:
+Retrieve, inspect and validate real SPHEREx observations
+for selected astronomical coordinates.
 
 ## 1. Open the existing repository
 Copy these files/folders into the root of your existing ORBITAL EYE repository.

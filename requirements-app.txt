@@ -1,0 +1,7 @@
+streamlit>=1.40
+astropy>=6.1
+numpy>=1.26
+matplotlib>=3.8
+pandas>=2.2
+fsspec>=2024.6
+aiohttp>=3.9

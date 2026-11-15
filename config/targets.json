@@ -1,0 +1,7 @@
+{
+  "Barnard's Star": {"ra_deg": null, "dec_deg": null, "note": "Load reliable reference astrometry; proper motion must be propagated by epoch."},
+  "Epsilon Indi B": {"ra_deg": null, "dec_deg": null, "note": "Load reliable reference astrometry and validate archive coverage."},
+  "WISE 0855−0714": {"ra_deg": 133.795129, "dec_deg": -7.245147, "note": "Challenge coordinates have no stated reference epoch."},
+  "RW Aurigae": {"ra_deg": null, "dec_deg": null, "note": "Load reliable reference astrometry; verify coverage."},
+  "R Draconis": {"ra_deg": null, "dec_deg": null, "note": "Load reliable reference astrometry; verify coverage."}
+}
