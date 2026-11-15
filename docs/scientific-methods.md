@@ -27,6 +27,23 @@ filename/object key, release, processing version, `OBSID`, `DATE-OBS`,
 extensions are retained when available. The app sorts by parsed observation
 time, never by filename or spectral-channel order.
 
+The application browses bounded public S3 listings under the DR1 and QR3
+Level 2 prefixes, following planning-period, processing-run and detector
+folders. A directory listing is not a coordinate search, is not guaranteed to
+cover the complete archive, and is never presented as evidence of target
+coverage. A user-selected FITS file is accepted only after its `IMAGE` WCS
+contains the requested coordinate; selected image and quality cutouts are
+then read from the public object service where HTTP range requests are
+supported. A network or listing failure is reported as unavailable access,
+never as an empty-observation claim. Users can also load an HTTPS FITS URL
+from the public SPHEREx host or upload genuine Level 2 FITS files.
+
+The one-click demonstration loads two genuine DR1 Level 2 observations from
+the public archive at RA 160.6180°, Dec +30.6694°. This is a sample field, not
+WISE 0855. The example files have incomplete wavelength metadata (`WCS-WAVE`
+is present), so the application keeps the display visual-only and does not
+infer a difference measurement or astrophysical variability from the images.
+
 ## Coordinate and epoch method
 
 The WCS conversion is treated as a scalar operation: a single coordinate must

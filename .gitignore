@@ -1,17 +1,26 @@
 .venv/
 .venv-1/
+.venv-*/
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .streamlit/
+.env
 *.tmp
 *.part
 *.log
 *.env
 *.env.*
+secrets.toml
+credentials.json
+*.pem
+*.key
 *.fits
 *.fit
 *.fits.gz
+*.fits.fz
+*.fts
+*.fts.gz
 data/cache/*
 data/cutouts/*
 data/previews/*
@@ -29,6 +38,8 @@ spherex_dr1_level2_inventory.csv
 spherex_observation_groups.csv
 study/results/spherex_dr1_level2_inventory.csv
 study/results/spherex_observation_groups.csv
+study/results/spherex_level2_inventory.csv
+study/results/spherex_qr3_direct_test.csv
 
 # Study outputs are reproducible research artefacts, not application source.
 study/results/*.fits

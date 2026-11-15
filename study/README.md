@@ -25,9 +25,9 @@ sample and retain the original object keys and release metadata.
 ## Results and local data
 
 `study/results/` contains small, reviewable tables and saved endpoint
-responses. Bulk inventories and FITS files are local-only and ignored by Git.
-They are not synthetic data; they are generated from the official archive and
-must retain their provenance when reused.
+responses. Generated inventories and FITS files are local-only and ignored by
+Git. They are not synthetic data; they are generated from the official archive
+and must retain their provenance when reused.
 
 For the method and scientific limitations, see
 [docs/scientific-methods.md](../docs/scientific-methods.md).

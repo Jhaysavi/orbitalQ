@@ -11,20 +11,48 @@ independent validation.
 
 ## Run the application
 
-Use the existing virtual environment when available. From the repository
-root:
+From the repository root (Python 3.10 or later):
 
 ```bash
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-streamlit run app.py
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/streamlit run app.py
 ```
 
 The app can display a small real SPHEREx DR1 All-Sky Cube cutout from the
-public cloud object and can load genuine Level 2 MEF FITS files from upload or
-the local cache. It reads observation metadata from FITS headers, including
-`DATE-OBS`, `MJD-OBS`, `OBSID`, detector, units, WCS, `FLAGS` and `VARIANCE`.
-No synthetic image is substituted when retrieval fails.
+public cloud object, resolve an object name when the configured name service
+can resolve it, and browse bounded directory listings from the public SPHEREx
+S3 archive. Browsing is by release, planning period, processing run and
+detector; it is not presented as a complete coordinate search. Selected remote
+FITS files pass an actual WCS check before their cutouts are loaded. The app
+also offers a one-click sequence of two genuine DR1 observations at a clearly
+identified example field. This visual example is not WISE 0855 and does not
+claim astrophysical variability.
+
+In the **Compare Level 2 visits** tab, use the public S3 browser, load the
+verified example sequence, paste a public FITS URL, or upload genuine Level 2
+MEF files. The app reads `DATE-OBS`, `MJD-OBS`, `OBSID`, detector, units, WCS,
+`FLAGS` and `VARIANCE`; no synthetic image or coverage claim is substituted
+when retrieval fails. Before/after and blink views use a shared image stretch,
+but remain visual aids rather than scientific difference measurements.
+Streamlit caches successful remote cutouts and archive listings in-process;
+uploaded FITS files and local caches are not committed.
+
+## Streamlit Community Cloud
+
+1. Push the prepared repository to a GitHub branch you control.
+2. In [Streamlit Community Cloud](https://share.streamlit.io/), choose **Create
+   app**, select the repository and branch, and set the main file to `app.py`
+   at the repository root.
+3. In **Advanced settings**, choose Python 3.10 or later, then deploy. Cloud
+   installs the runtime dependencies from `requirements.txt`.
+4. No secrets or credentials are required. Do not add local FITS files,
+   `.env` files, or `.streamlit/secrets.toml` to Git.
+
+The app accesses the public SPHEREx S3 archive over HTTPS. If remote browsing
+or file access is unavailable, the app reports the error and local FITS
+uploads remain available. Community Cloud storage is ephemeral; its cache is
+not a durable archive.
 
 ## Tests and checks
 
