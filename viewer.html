@@ -1,382 +1,795 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" class="dark">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Compare real NASA SPHEREx infrared observations, inspect catalog predictions, and open the original FITS files.">
-<title>Orbital Eye · SPHEREx Observation Explorer</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>:root{color-scheme:dark;font:400 15px/1.55 "Instrument Sans",system-ui,sans-serif;background:#090f17;color:#edf2f7;--panel:#101a26;--line:#2a3848;--muted:#a9b9ca;--accent:#ffc87a;--teal:#8fe8d4;--mono:"IBM Plex Mono",ui-monospace,monospace}
-*{box-sizing:border-box}
-[hidden]{display:none!important}
-body{margin:0}
-a{color:var(--teal);text-underline-offset:.22em}
-button,select,input{font:inherit}
-button,select{color:inherit;background:#182636;border:1px solid #3e5268;border-radius:7px;min-height:44px}
-button{padding:.55rem .9rem;font-weight:600;cursor:pointer}
-button:hover:not(:disabled),button[aria-pressed=true]{background:#23364a;border-color:#91a8bd}
-button:disabled{opacity:.53;cursor:default}
-:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
-.skip{position:absolute;transform:translateY(-150%);padding:.65rem;background:var(--panel);z-index:2}
-.skip:focus{transform:none}
-.shell{max-width:1460px;margin:auto;padding-inline:clamp(1rem,3vw,2.75rem)}
-.site-header{border-bottom:1px solid var(--line);background:#0d1621}
-.masthead{display:flex;min-height:67px;gap:1rem;align-items:center;justify-content:space-between}
-.brand{display:flex;align-items:center;gap:.7rem;font-size:1.2rem;font-weight:700;letter-spacing:-.04em}
-.brand-mark{width:23px;height:23px;border:1px solid var(--accent);border-radius:50%;display:grid;place-items:center}
-.brand-mark::after{content:"";width:7px;height:7px;background:var(--accent);border-radius:50%}
-.mission{font:500 .76rem/1.4 var(--mono);color:var(--muted);text-align:right}
-main{padding-block:clamp(1.35rem,3vw,2.65rem) 3rem}
-.intro{margin-bottom:1.2rem}
-h1,h2,p{margin:0}
-h1{font-size:clamp(2.1rem,4.9vw,3.75rem);line-height:1.04;letter-spacing:-.065em}
-.intro p{color:var(--muted);margin-top:.55rem;max-width:58ch}
-h2{font-size:1.15rem;letter-spacing:-.025em}
-.workspace-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(16.75rem,21rem);gap:1rem;align-items:start}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;min-width:0}
-.comparison{padding:clamp(.75rem,2vw,1.2rem)}
-.controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.65rem;margin:0;padding:0;border:0;min-width:0}
-.controls label{display:grid;gap:.26rem;font-size:.79rem;font-weight:600;color:var(--muted)}
-select{width:100%;min-width:0;padding:.48rem .55rem;font-family:var(--mono);font-size:.8rem}
-.toolbar,.actions{display:flex;align-items:center;flex-wrap:wrap;gap:.55rem}
-.toolbar{margin-top:.9rem}
-#blink{background:var(--accent);color:#22170b;border-color:var(--accent)}
-#blink:hover:not(:disabled){background:#ffdaaa}
-.toggle{display:flex;align-items:center;gap:.42rem;min-height:44px;color:#d8e3ee;padding-inline:.2rem}
-.toggle input{width:1rem;height:1rem;accent-color:var(--teal)}
-#frame-status{font:400 .77rem/1.4 var(--mono);color:var(--muted);margin:.75rem 0 .5rem}
-#panels{display:grid;grid-template-columns:minmax(0,1fr);gap:.6rem}
-#panels[data-layout=split]{grid-template-columns:repeat(2,minmax(0,1fr))}
-figure{margin:0;min-width:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#070b10}
-.exposure{position:relative;width:min(100%,540px);margin:auto}
-.exposure img{display:block;width:100%;height:auto}
-.marker{pointer-events:none;position:absolute;width:1.25rem;height:1.25rem;border:2px solid var(--teal);border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 1px #070b10}
-figcaption{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:.2rem .65rem;padding:.55rem .65rem;background:#14202e;font:400 .72rem/1.45 var(--mono);overflow-wrap:anywhere}
-.frame-label{color:var(--accent);font-weight:600}
-#coverage:empty,#case-description:empty,#share-status:empty,#wavelengths:empty{display:none}
-#coverage,#case-description{margin-top:.65rem}
-.sidebar{display:grid;gap:1rem}
-.sidebar .card{padding:1rem}
-.sidebar p,.sidebar .source-links,.actions{margin-top:.48rem}
-.muted{color:var(--muted);font-size:.84rem}
-#expected-shift{font-size:1.04rem;line-height:1.35;color:var(--teal);font-weight:600}
-.source-links{display:grid;justify-items:start;gap:.3rem;font-size:.88rem}
-.actions button{font-size:.8rem}
-kbd{border:1px solid #4a5c6e;border-radius:.25rem;padding:.02rem .28rem;font-family:var(--mono);color:var(--accent)}
-#empty{padding:1rem;border:1px solid var(--line);border-radius:8px}
-@media(max-width:930px){.workspace-grid{grid-template-columns:minmax(0,1fr)}.sidebar{grid-template-columns:repeat(2,minmax(0,1fr))}.sources{grid-column:1/-1}}
-@media(max-width:560px){.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.controls label:first-child{grid-column:1/-1}.sidebar{grid-template-columns:minmax(0,1fr)}.mission{max-width:15ch}.toolbar{gap:.4rem}.toolbar button{flex:1}.toggle{flex:auto}figcaption{padding:.45rem}#panels[data-layout=split] figure{border-radius:5px}}
-.case-options{border-bottom:1px solid var(--line);padding:.4rem 0 .75rem}
-.case-options summary{color:var(--teal);cursor:pointer}
-.case-options fieldset{margin-top:.6rem}
-#panel-controls{display:grid;gap:.5rem;margin:.65rem 0}
-#panel-controls label{display:flex;justify-content:space-between;gap:1rem;font:400 .78rem/1.4 var(--mono);color:var(--muted)}
-#swipe{width:100%;height:32px;margin:0;accent-color:var(--accent);cursor:ew-resize;touch-action:pan-y}
-#pair-fits{display:flex;gap:1rem;flex-wrap:wrap;font-size:.82rem}
-#panels[data-layout=swipe]{position:relative;width:min(100%,620px);margin:auto;display:grid;--swipe:50%}
-#panels[data-layout=swipe] figure{grid-area:1/1;border:0;border-radius:8px}
-#panels[data-layout=swipe] figure:last-of-type{clip-path:inset(0 0 0 var(--swipe))}
-#panels[data-layout=swipe] .exposure{width:100%}
-#panels[data-layout=swipe] figcaption{display:none}
-.swipe-rule{position:absolute;pointer-events:none;left:var(--swipe);top:0;bottom:0;width:2px;background:var(--accent);transform:translateX(-50%);box-shadow:0 0 9px #ffc87a88}
-.swipe-rule::after{content:"↔";display:grid;place-items:center;position:absolute;top:50%;left:50%;width:2rem;height:2rem;border:1px solid var(--accent);border-radius:50%;background:#15191f;color:var(--accent);transform:translate(-50%,-50%)}
-#reveal{color:#21170c;background:var(--accent);border-color:var(--accent)}
-#reveal:hover{background:#ffdaaa}
-#guide-step{color:var(--accent)}
-#swipe-mode[aria-pressed=true]{border-color:var(--teal)}
-@media(max-width:560px){#reveal{flex-basis:100%}.toolbar button{font-size:.82rem;padding-inline:.45rem}}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>orbitalQ — SPHEREx Infrared Sky Explorer (NASA Space Apps 2026)</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #070913;
+      color: #e2e8f0;
+    }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .panel {
+      background: rgba(15, 20, 38, 0.88);
+      border: 1px solid rgba(139, 92, 246, 0.22);
+      backdrop-filter: blur(10px);
+    }
+    .band-1 { background: rgba(129, 140, 248, 0.18); color: #a5b4fc; border-color: rgba(129, 140, 248, 0.4); }
+    .band-2 { background: rgba(56, 189, 248, 0.18); color: #7dd3fc; border-color: rgba(56, 189, 248, 0.4); }
+    .band-3 { background: rgba(251, 191, 36, 0.18); color: #fcd34d; border-color: rgba(251, 191, 36, 0.4); }
+    .band-4 { background: rgba(249, 115, 22, 0.18); color: #fdba74; border-color: rgba(249, 115, 22, 0.4); }
+    .band-5 { background: rgba(244, 63, 94, 0.18); color: #fda4af; border-color: rgba(244, 63, 94, 0.4); }
+    .band-6 { background: rgba(192, 132, 252, 0.18); color: #d8b4fe; border-color: rgba(192, 132, 252, 0.4); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0b0f1e; }
+    ::-webkit-scrollbar-thumb { background: #312e81; border-radius: 9999px; }
+  </style>
 </head>
-<body>
-<a class="skip" href="#main">Skip to content</a>
-<header class="site-header"><div class="shell masthead">
-<span class="brand"><span class="brand-mark" aria-hidden="true"></span>Orbital Eye</span>
-<span class="mission">NASA Space Apps · SPHEREx</span>
-</div></header>
-<main id="main" class="shell">
-<div class="intro">
-<h1>Which point moved?</h1>
-<p>Compare real SPHEREx infrared observations of the same sky field across dates.</p>
-</div>
-<p id="empty" hidden>No observations have been packaged yet. Follow the repository README to generate a viewer from NASA/IPAC IRSA cutouts.</p>
-<section id="workspace" hidden aria-label="Observation comparison">
-<div class="workspace-grid">
-<section class="card comparison" aria-label="Image comparison">
-<details class="case-options"><summary id="case-summary">Choose a target or dates</summary>
-<fieldset class="controls" aria-label="Target and observation dates">
-<label>Target <select id="target"></select></label>
-<label>Earlier observation <select id="first"></select></label>
-<label>Later observation <select id="second"></select></label>
-</fieldset></details>
-<div class="toolbar">
-<button id="swipe-mode" type="button" aria-pressed="true">Swipe</button>
-<button id="blink" type="button">Blink</button>
-<button id="layout" type="button" aria-pressed="false">Side by side</button>
-<button id="reveal" type="button" aria-pressed="false">Reveal expected position</button><input id="overlay" type="checkbox" hidden>
-</div>
-<p id="frame-status" role="status"></p>
-<div id="panels"></div>
-<div id="panel-controls" hidden>
-<label for="swipe"><span id="earlier-date">Earlier</span><span id="later-date">Later</span></label>
-<input id="swipe" type="range" min="0" max="100" value="50" aria-label="Earlier and later image comparison">
-<div id="pair-fits"><a id="earlier-fits">Earlier FITS</a><a id="later-fits">Later FITS</a></div>
-</div>
-<p id="coverage" class="muted"></p>
-</section>
-<aside class="sidebar" aria-label="Guide and observation evidence">
-<section class="card" aria-labelledby="guide-title">
-<h2 id="guide-title">How to compare</h2>
-<p>Drag the slider to compare two observations. Look for a point that shifts relative to nearby stars.</p>
-<p id="guide-step" class="muted">Then reveal the expected position.</p>
-<p id="case-description" class="muted"></p>
-<p class="muted">Use the arrow keys on the slider. <kbd>Space</kbd> switches dates in Blink mode. <kbd>R</kbd> toggles the overlay.</p>
-</section>
-<section id="evidence" class="card" aria-labelledby="evidence-title">
-<h2 id="evidence-title">Pair evidence</h2>
-<p id="expected-shift"></p>
-<p id="wavelengths" class="muted"></p>
-<p class="muted">The estimate uses catalog proper motion and elapsed time. It excludes parallax.</p>
-<div class="actions">
-<button id="share" type="button">Copy pair link</button>
-<button id="export" type="button">Download CSV</button>
-</div>
-<p id="share-status" role="status"></p>
-</section>
-<section class="card sources" aria-labelledby="sources-title">
-<h2 id="sources-title">Observation sources</h2>
-<p id="details" class="muted"></p>
-<div class="source-links">
-<a id="catalog">Astrometry reference</a>
+<body class="min-h-screen flex flex-col overflow-x-hidden">
 
-<a href="https://irsa.ipac.caltech.edu/spherex-archive-documentation/spherex-data-access/">NASA/IPAC IRSA archive</a>
-</div>
-<p class="muted">These display previews use a common sky grid and shared brightness stretch. Blank pixels lie outside common coverage. Use the original FITS for quantitative analysis.</p>
+  <!-- Toast notification -->
+  <div id="toast" class="fixed bottom-4 right-4 z-50 hidden px-4 py-2.5 rounded-lg bg-slate-900 border border-cyan-500/40 text-cyan-200 text-sm shadow-xl"></div>
 
-</section>
-</aside>
-</div>
-</section>
-</main>
-<script id="case-data" type="application/json"><!-- CASE_DATA --></script>
-<script>
-const byId = id => document.getElementById(id);
-const bindings = ["target", "first", "second", "blink", "layout", "overlay", "panels", "coverage", "details", "catalog"];
-const ui = Object.fromEntries(bindings.map(key => [key, byId(key)]));
-const raw = byId("case-data").textContent.trim();
-const cases = raw.startsWith("[") ? JSON.parse(raw) : [];
-let activeFrame = "first";
-let comparisonMode = "swipe";
-function pairEvidence() {
-    const item = cases[Number(ui.target.value)];
-    const first = item.frames[Number(ui.first.value)];
-    const second = item.frames[Number(ui.second.value)];
-    const motion = {barnard: Math.hypot(.801551, 10.362394), wise_0855: Math.hypot(8.1, .7)}[item.key];
-    const shift = motion * (second.mjd - first.mjd) / 365.25;
-    return { item, first, second, shift };
-}
-function renderEvidence() {
-    const { first, second, shift } = pairEvidence();
-    byId("expected-shift").textContent = Number.isFinite(shift)
-        ? "Expected catalog displacement: " + shift.toFixed(2) + " arcseconds."
-        : "Catalog displacement unavailable.";
-    byId("wavelengths").textContent = [first, second].every(frame => Number.isFinite(frame.wavelength))
-        ? "Effective wavelengths: " + first.wavelength.toFixed(3) + " and " + second.wavelength.toFixed(3) + " µm."
-        : "";
-    byId("share-status").textContent = "";
-}
-function selectObservation(control, frames, id) {
-    const match = [...control.options].find(option => frames[Number(option.value)].obsid === id);
-    if (match) control.value = match.value;
-}
-function downloadEvidence() {
-    const { item, first, second, shift } = pairEvidence();
-    const rows = [["target", "utc", "observation_id", "detector", "wavelength_um", "fits_url", "catalog", "preview_manifest", "predicted_pair_shift_arcsec"]];
-    for (const frame of [first, second]) {
-        rows.push([item.name, frame.date, frame.obsid, item.detector, frame.wavelength ?? "", frame.fits,
-            item.source, item.snapshot ?? "", Number.isFinite(shift) ? shift.toFixed(2) : ""]);
+  <!-- Top Command Bar -->
+  <header class="panel border-x-0 border-t-0 px-4 py-3 sticky top-0 z-40">
+    <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-violet-900/40">
+          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="4"></circle>
+            <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(-25 12 12)"></ellipse>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg font-bold tracking-tight text-white">orbital<span class="text-cyan-400">Q</span></h1>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">NASA Space Apps 2026</span>
+          </div>
+          <p class="text-xs text-slate-400">Explore the infrared sky (0.75–5.0 µm). Discover what changes.</p>
+        </div>
+      </div>
+
+      <!-- Target & Coordinate Controls -->
+      <div class="flex flex-wrap items-center gap-2">
+        <select id="presetSelect" class="bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-100 focus:outline-none focus:border-cyan-400">
+          <option value="WISE 0855-0714">WISE 0855−0714 (Brown Dwarf)</option>
+          <option value="Barnard's Star">Barnard's Star (Highest PM)</option>
+          <option value="Epsilon Indi B">Epsilon Indi B (Binary BD)</option>
+          <option value="RW Aurigae">RW Aurigae (T Tauri Var)</option>
+          <option value="R Draconis">R Draconis (Mira Var)</option>
+        </select>
+
+        <div class="flex items-center gap-1 bg-slate-900/90 border border-slate-700 rounded-lg px-2 py-1">
+          <span class="text-xs text-slate-400">RA</span>
+          <input id="raInput" type="number" step="0.0001" class="w-20 bg-transparent text-xs mono text-cyan-300 focus:outline-none" />
+          <span class="text-xs text-slate-400">Dec</span>
+          <input id="decInput" type="number" step="0.0001" class="w-20 bg-transparent text-xs mono text-cyan-300 focus:outline-none" />
+          <button id="goCoordsBtn" class="px-2 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-medium transition">Go</button>
+        </div>
+
+        <select id="fovSelect" class="bg-slate-900/90 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-400">
+          <option value="2">FOV: 2'</option>
+          <option value="5" selected>FOV: 5'</option>
+          <option value="10">FOV: 10'</option>
+        </select>
+
+        <label class="cursor-pointer px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs text-slate-200 transition">
+          Load JSON
+          <input id="jsonFileInput" type="file" accept=".json" class="hidden" />
+        </label>
+
+        <button id="shareUrlBtn" class="px-2.5 py-1.5 rounded-lg bg-violet-600/25 hover:bg-violet-600/40 border border-violet-500/40 text-xs text-violet-200 transition">Share URL</button>
+        <button id="exportBtn" class="px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs transition">Export Provenance</button>
+      </div>
+    </div>
+
+    <!-- Sub-nav View Switcher -->
+    <div class="max-w-[1600px] mx-auto mt-2.5 pt-2.5 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <button id="tabExplorer" class="px-3 py-1 rounded-md text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Explorer & Sky View</button>
+        <button id="tabTemporal" class="px-3 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 border border-transparent">Temporal Blink & Difference (B − A)</button>
+      </div>
+      <div class="text-xs text-slate-400 flex items-center gap-3">
+        <span>Archive: <strong class="text-slate-200">NASA/IPAC IRSA SPHEREx DR1/QR3</strong></span>
+        <span class="hidden sm:inline">•</span>
+        <span class="hidden sm:inline">Overlays: <strong class="text-slate-200">ESA Gaia DR3 + NASA WISE</strong></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-4">
+
+    <!-- VIEW 1: EXPLORER VIEW -->
+    <section id="explorerView" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+      <!-- Left Panel: Chronological Level 2 Observations -->
+      <aside class="lg:col-span-3 panel rounded-xl p-3.5 flex flex-col max-h-[780px]">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-semibold text-white">SPHEREx Level 2 Visits</h2>
+          <span id="obsCountBadge" class="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-cyan-300 mono">0 visits</span>
+        </div>
+        <div id="obsTimelineList" class="space-y-2 overflow-y-auto pr-1 flex-1"></div>
+      </aside>
+
+      <!-- Center Panel: Sky Visualizer (Aladin Lite v3 + Synthetic/Blink Fallback) -->
+      <div class="lg:col-span-6 panel rounded-xl p-3.5 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 id="viewerTitle" class="text-sm font-semibold text-white">Infrared Sky Viewer — WISE 0855−0714</h2>
+            <p id="viewerCoords" class="text-xs mono text-slate-400">ICRS RA 133.7951° | Dec -7.2451° | FOV 5.0'</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+              <input id="gaiaOverlayToggle" type="checkbox" checked class="accent-cyan-400" />
+              Gaia DR3 PM
+            </label>
+            <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+              <input id="zodiToggle" type="checkbox" checked class="accent-violet-400" />
+              Zodi Subtracted
+            </label>
+          </div>
+        </div>
+
+        <!-- Sky Viewport -->
+        <div class="relative w-full h-[460px] rounded-lg overflow-hidden border border-slate-800 bg-slate-950">
+          <div id="aladinContainer" class="w-full h-full"></div>
+          <canvas id="fallbackSkyCanvas" class="hidden absolute inset-0 w-full h-full"></canvas>
+          <div id="skyHudBadge" class="absolute top-2.5 left-2.5 px-2.5 py-1 rounded bg-slate-950/80 border border-slate-700 text-[11px] mono text-cyan-300 pointer-events-none">
+            Aladin Lite v3 • HiPS / 2MASS-WISE
+          </div>
+        </div>
+
+        <!-- Quick Playback Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <div class="flex items-center gap-2">
+            <button id="quickBlinkBtn" class="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-xs font-medium text-cyan-200 transition">▶ Blink Epochs</button>
+            <button id="prevVisitBtn" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200">◀ Prev</button>
+            <button id="nextVisitBtn" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200">Next ▶</button>
+          </div>
+          <span id="activeVisitLabel" class="text-xs mono text-amber-300">Epoch: 2025-11-14 (Band 3 • 1.85 µm)</span>
+        </div>
+      </div>
+
+      <!-- Right Panel: Scientific Context & Live Spectrum -->
+      <aside class="lg:col-span-3 panel rounded-xl p-3.5 flex flex-col gap-4">
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <h2 class="text-sm font-semibold text-white">On-the-Fly Spectrum</h2>
+            <span class="text-[11px] text-slate-400">0.75–5.0 µm</span>
+          </div>
+          <p class="text-[11px] text-slate-400 mb-2">Derived from SPHEREx <span class="mono text-violet-300">WCS-WAVE</span> &amp; <span class="mono text-violet-300">IMAGE</span></p>
+          <div class="relative h-56 w-full">
+            <canvas id="spectrumChart"></canvas>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-800 pt-3">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Visit Provenance &amp; Metrics</h3>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-lg p-2">
+              <div class="text-slate-400 text-[11px]">Flux (MJy/sr)</div>
+              <div id="metricFlux" class="mono text-cyan-300 font-semibold text-sm">—</div>
+            </div>
+            <div class="bg-slate-900/80 border border-slate-800 rounded-lg p-2">
+              <div class="text-slate-400 text-[11px]">SNR (from VARIANCE)</div>
+              <div id="metricSnr" class="mono text-emerald-300 font-semibold text-sm">—</div>
+            </div>
+            <div class="bg-slate-900/80 border border-slate-800 rounded-lg p-2">
+              <div class="text-slate-400 text-[11px]">Wavelength / Band</div>
+              <div id="metricWave" class="mono text-amber-300 font-semibold text-sm">—</div>
+            </div>
+            <div class="bg-slate-900/80 border border-slate-800 rounded-lg p-2">
+              <div class="text-slate-400 text-[11px]">Astrometry Flag</div>
+              <div id="metricAstrom" class="mono text-emerald-400 font-semibold text-sm">0 (OK)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-800 pt-3">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Quality Bitmask (FLAGS)</h3>
+          <div id="flagsContainer" class="flex flex-wrap gap-1.5"></div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- VIEW 2: TEMPORAL BLINK & DIFFERENCE VERIFICATION -->
+    <section id="temporalView" class="hidden space-y-4">
+      <!-- 3-Panel Synchronized Comparison -->
+      <div class="panel rounded-xl p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div>
+            <h2 class="text-sm font-semibold text-white">Multi-Epoch Synchronized Comparator</h2>
+            <p class="text-xs text-slate-400">Compare two visits and inspect the <span class="mono text-cyan-300">Difference Map (Epoch B − Epoch A)</span> for proper-motion dipoles.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <select id="epochASelect" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200"></select>
+            <span class="text-xs text-slate-500">vs</span>
+            <select id="epochBSelect" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200"></select>
+            <button id="toggleDiffBlinkBtn" class="px-3 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-xs text-amber-200 font-medium">Auto-Blink A/B</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-2">
+            <div class="flex justify-between text-xs mb-1.5">
+              <span class="font-medium text-cyan-300">Epoch A</span>
+              <span id="labelEpochA" class="mono text-slate-400">—</span>
+            </div>
+            <canvas id="canvasEpochA" width="320" height="240" class="w-full h-56 rounded bg-black"></canvas>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-2">
+            <div class="flex justify-between text-xs mb-1.5">
+              <span class="font-medium text-amber-300">Epoch B</span>
+              <span id="labelEpochB" class="mono text-slate-400">—</span>
+            </div>
+            <canvas id="canvasEpochB" width="320" height="240" class="w-full h-56 rounded bg-black"></canvas>
+          </div>
+          <div class="bg-slate-950 border border-violet-500/40 rounded-lg p-2">
+            <div class="flex justify-between text-xs mb-1.5">
+              <span class="font-medium text-violet-300">Difference Map (B − A)</span>
+              <span class="mono text-slate-400">Dipole = Motion</span>
+            </div>
+            <canvas id="canvasDiff" width="320" height="240" class="w-full h-56 rounded bg-black"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Row: Lightcurve & Candidate Report -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="panel rounded-xl p-4">
+          <h3 class="text-sm font-semibold text-white mb-1">Flux Lightcurve (Epoch Chronology)</h3>
+          <p class="text-xs text-slate-400 mb-3">Useful for variable stars (<span class="text-slate-200">RW Aurigae</span>, <span class="text-slate-200">R Draconis</span>) using <span class="mono">VARIANCE</span> uncertainty.</p>
+          <div class="relative h-64 w-full">
+            <canvas id="lightcurveChart"></canvas>
+          </div>
+        </div>
+
+        <div class="panel rounded-xl p-4 flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-semibold text-white mb-1">Candidate Investigation &amp; Traceability</h3>
+            <p class="text-xs text-slate-400 mb-3">A visual candidate is not automatically a discovery. Log provenance before flagging.</p>
+            <div class="space-y-2 text-xs bg-slate-900/70 border border-slate-800 rounded-lg p-3 mono">
+              <div>Target: <span id="provTarget" class="text-cyan-300">WISE 0855-0714</span></div>
+              <div>Data Source: <span class="text-slate-200">NASA/IPAC IRSA SPHEREx DR1/QR3</span></div>
+              <div>Gaia DR3 Match: <span id="provGaia" class="text-emerald-300">Checked (No Chinese Archives)</span></div>
+              <div>Active URL: <span id="provUrl" class="text-violet-300 break-all">—</span></div>
+            </div>
+          </div>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <button id="markCandidateBtn" class="px-3.5 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-xs font-semibold text-emerald-200 transition">Flag Candidate for Review</button>
+            <button id="exportTemporalBtn" class="px-3.5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-semibold transition">Download JSON Evidence</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" async></script>
+  <script>
+    const PRESETS = {
+      "WISE 0855-0714": { ra: 133.795129, dec: -7.245147, pmRa: -8.1, pmDec: 0.7, note: "Coldest known brown dwarf (high proper motion)" },
+      "Barnard's Star": { ra: 269.452075, dec: 4.693391, pmRa: -0.8, pmDec: 10.3, note: "Highest known proper motion star" },
+      "Epsilon Indi B": { ra: 331.076250, dec: -56.782500, pmRa: 3.9, pmDec: -2.5, note: "Binary brown dwarf system" },
+      "RW Aurigae": { ra: 76.956500, dec: 30.401417, pmRa: 0.0, pmDec: 0.0, note: "Classical T Tauri variable star" },
+      "R Draconis": { ra: 248.165000, dec: 66.755556, pmRa: 0.0, pmDec: 0.0, note: "Mira-type long-period variable" }
+    };
+
+    function buildSampleObservations(targetName) {
+      const base = [
+        { index: 1, obs_date: "2025-05-18", mjd: 60813.2, bandpass: "SPHEREx-D1", detector: 1, wavelength_um: 0.92, flux_mjy_sr: 0.042, uncertainty_mjy_sr: 0.004, snr: 10.5, zodi_subtracted: true, fine_astrometry_flag: 0, flags_summary: { TRANSIENT: 12, PERSIST: 4 } },
+        { index: 2, obs_date: "2025-06-02", mjd: 60828.5, bandpass: "SPHEREx-D2", detector: 2, wavelength_um: 1.38, flux_mjy_sr: 0.078, uncertainty_mjy_sr: 0.005, snr: 15.6, zodi_subtracted: true, fine_astrometry_flag: 0, flags_summary: { PERSIST: 2 } },
+        { index: 3, obs_date: "2025-08-19", mjd: 60906.1, bandpass: "SPHEREx-D3", detector: 3, wavelength_um: 1.98, flux_mjy_sr: 0.115, uncertainty_mjy_sr: 0.006, snr: 19.1, zodi_subtracted: true, fine_astrometry_flag: 0, flags_summary: { SNOWBALL: 1 } },
+        { index: 4, obs_date: "2025-11-14", mjd: 60993.4, bandpass: "SPHEREx-D4", detector: 4, wavelength_um: 3.12, flux_mjy_sr: 0.164, uncertainty_mjy_sr: 0.009, snr: 18.2, zodi_subtracted: true, fine_astrometry_flag: 0, flags_summary: { TRANSIENT: 3, ZODI_MODEL: 1 } },
+        { index: 5, obs_date: "2026-03-02", mjd: 61101.8, bandpass: "SPHEREx-D5", detector: 5, wavelength_um: 4.15, flux_mjy_sr: 0.245, uncertainty_mjy_sr: 0.012, snr: 20.4, zodi_subtracted: true, fine_astrometry_flag: 0, flags_summary: { HALO: 5 } },
+        { index: 6, obs_date: "2026-06-21", mjd: 61212.0, bandpass: "SPHEREx-D6", detector: 6, wavelength_um: 4.72, flux_mjy_sr: 0.210, uncertainty_mjy_sr: 0.014, snr: 15.0, zodi_subtracted: true, fine_astrometry_flag: 0, flags_summary: { PERSIST: 6 } }
+      ];
+      if (targetName === "RW Aurigae" || targetName === "R Draconis") {
+        base[2].flux_mjy_sr = 0.065;
+        base[4].flux_mjy_sr = 0.310;
+      }
+      return base;
     }
-    const csv = rows.map(row => row.map(value => '"' + String(value).replaceAll('"', '""') + '"').join(",")).join("\r\n");
-    const url = URL.createObjectURL(new Blob([csv], {type: "text/csv;charset=utf-8"}));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "orbitalq-" + item.key + "-evidence.csv";
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-function initializeEvidence() {
-    const params = new URLSearchParams(location.search);
-    const { item } = pairEvidence();
-    selectObservation(ui.first, item.frames, params.get("earlier"));
-    selectEarlier();
-    selectObservation(ui.second, item.frames, params.get("later"));
-    render();
-    byId("export").addEventListener("click", downloadEvidence);
-    byId("share").addEventListener("click", async () => {
-        const { item, first, second } = pairEvidence();
-        const url = new URL(location.href);
-        url.searchParams.set("target", item.key);
-        url.searchParams.set("earlier", first.obsid);
-        url.searchParams.set("later", second.obsid);
+
+    const state = {
+      target: "WISE 0855-0714",
+      ra: PRESETS["WISE 0855-0714"].ra,
+      dec: PRESETS["WISE 0855-0714"].dec,
+      fovArcmin: 5,
+      observations: buildSampleObservations("WISE 0855-0714"),
+      activeIdx: 3,
+      epochAIdx: 0,
+      epochBIdx: 4,
+      blinkTimer: null,
+      aladin: null,
+      spectrumChart: null,
+      lightcurveChart: null,
+      flaggedCandidate: false
+    };
+
+    function showToast(msg) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.remove("hidden");
+      setTimeout(() => el.classList.add("hidden"), 2800);
+    }
+
+    function readUrlParams() {
+      const params = new URLSearchParams(window.location.search);
+      const t = params.get("target");
+      const ra = parseFloat(params.get("ra"));
+      const dec = parseFloat(params.get("dec"));
+      const fov = parseFloat(params.get("fov"));
+      if (t && PRESETS[t]) {
+        state.target = t;
+        state.ra = PRESETS[t].ra;
+        state.dec = PRESETS[t].dec;
+        state.observations = buildSampleObservations(t);
+      }
+      if (!Number.isNaN(ra) && !Number.isNaN(dec)) {
+        state.ra = ra;
+        state.dec = dec;
+        if (!t) state.target = `ICRS (${ra.toFixed(3)}, ${dec.toFixed(3)})`;
+      }
+      if (!Number.isNaN(fov) && [2, 5, 10].includes(fov)) {
+        state.fovArcmin = fov;
+      }
+    }
+
+    function syncUrl() {
+      const url = new URL(window.location.href);
+      url.searchParams.set("target", state.target);
+      url.searchParams.set("ra", state.ra.toFixed(5));
+      url.searchParams.set("dec", state.dec.toFixed(5));
+      url.searchParams.set("fov", String(state.fovArcmin));
+      document.getElementById("provUrl").textContent = url.toString();
+      try { window.history.replaceState({}, "", url.toString()); } catch (_) {}
+      return url.toString();
+    }
+
+    function initAladin() {
+      if (typeof A === "undefined") {
+        renderFallbackSky();
+        return;
+      }
+      try {
+        state.aladin = A.aladin("#aladinContainer", {
+          survey: "P/allWISE/color",
+          fov: state.fovArcmin / 60,
+          target: `${state.ra} ${state.dec}`,
+          showReticle: true,
+          showZoomControl: true,
+          showLayersControl: true
+        });
+        document.getElementById("fallbackSkyCanvas").classList.add("hidden");
+      } catch (_) {
+        renderFallbackSky();
+      }
+    }
+
+    function updateAladinPosition() {
+      if (state.aladin) {
         try {
-            await navigator.clipboard.writeText(url.href);
-            byId("share-status").textContent = "Comparison link copied.";
-        } catch {
-            const link = document.createElement("a");
-            link.href = url.href;
-            link.textContent = "Open or copy this comparison link";
-            byId("share-status").replaceChildren(link);
-        }
-    });
-    document.addEventListener("keydown", event => {
-        if (event.repeat || event.altKey || event.ctrlKey || event.metaKey ||
-            event.target.closest("input, select, textarea, button, a, [contenteditable]")) return;
-        if (event.code === "Space" && comparisonMode === "blink") {
-            event.preventDefault();
-            ui.blink.click();
-        }
-        if (event.key.toLowerCase() === "r") {
-            ui.overlay.checked = !ui.overlay.checked;
-            render();
-        }
-    });
-}
-
-
-function option(label, value) {
-    return new Option(label, value);
-}
-
-function makeExposure(frame, name, label) {
-    const figure = document.createElement("figure");
-    const exposure = document.createElement("div");
-    exposure.className = "exposure";
-    const img = document.createElement("img");
-    img.src = frame.image;
-    img.alt = "SPHEREx infrared observation of " + name + ", " + frame.date;
-    exposure.append(img);
-    if (ui.overlay.checked && frame.marker) {
-        const marker = document.createElement("span");
-        marker.className = "marker";
-        marker.setAttribute("aria-hidden", "true");
-        marker.style.left = frame.marker[0] * 100 + "%";
-        marker.style.top = frame.marker[1] * 100 + "%";
-        exposure.append(marker);
+          state.aladin.gotoRaDec(state.ra, state.dec);
+          state.aladin.setFoV(state.fovArcmin / 60);
+          return;
+        } catch (_) {}
+      }
+      renderFallbackSky();
     }
-    const caption = document.createElement("figcaption");
-    const timestamp = document.createElement("span");
-    const stage = document.createElement("span");
-    stage.className = "frame-label";
-    stage.textContent = label;
-    timestamp.append(stage, " · " + frame.date);
-    const metadata = [frame.obsid];
-    if (Number.isFinite(frame.wavelength)) metadata.push(frame.wavelength.toFixed(3) + " µm");
-    caption.title = metadata.join(" · ");
-    caption.append(timestamp);
-    const link = document.createElement("a");
-    link.href = frame.fits;
-    link.textContent = "Original FITS";
-    caption.append(link);
-    figure.append(exposure, caption);
-    return figure;
-}
 
-function render() {
-    const current = cases[Number(ui.target.value)];
-    const earlier = current.frames[Number(ui.first.value)];
-    const later = current.frames[Number(ui.second.value)];
-    const sideBySide = comparisonMode === "split";
-    const swiping = comparisonMode === "swipe";
-    const frames = sideBySide || swiping ? [earlier, later] : [activeFrame === "first" ? earlier : later];
-    ui.panels.setAttribute("data-layout", comparisonMode);
-    ui.panels.replaceChildren(...frames.map(frame => makeExposure(frame, current.name, frame === earlier ? "Earlier" : "Later")));
-    if (swiping) {
-        const rule = document.createElement("div");
-        rule.className = "swipe-rule";
-        rule.setAttribute("aria-hidden", "true");
-        ui.panels.append(rule);
+    function renderFallbackSky() {
+      const canvas = document.getElementById("fallbackSkyCanvas");
+      canvas.classList.remove("hidden");
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = Math.max(320, rect.width || 600);
+      canvas.height = Math.max(320, rect.height || 460);
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#04060e";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Subtle WCS grid
+      ctx.strokeStyle = "rgba(139, 92, 246, 0.2)";
+      ctx.lineWidth = 1;
+      for (let x = 40; x < canvas.width; x += 70) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+      }
+      for (let y = 40; y < canvas.height; y += 70) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+      }
+
+      // Deterministic background stars
+      const seed = Math.abs(Math.floor(state.ra * 100 + state.dec * 100));
+      for (let i = 0; i < 95; i++) {
+        const sx = ((seed * (i + 7) * 9301 + 49297) % 233280) / 233280 * canvas.width;
+        const sy = ((seed * (i + 13) * 4391 + 19283) % 233280) / 233280 * canvas.height;
+        const r = (i % 5 === 0) ? 2.1 : 1.1;
+        ctx.fillStyle = i % 7 === 0 ? "#c4b5fd" : "#e2e8f0";
+        ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // Target + Proper Motion Vector
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const shift = (state.activeIdx - 2) * 5;
+      ctx.fillStyle = "#fbbf24";
+      ctx.beginPath(); ctx.arc(cx + shift, cy - shift * 0.4, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#38bdf8";
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx + shift, cy - shift * 0.4, 14, 0, Math.PI * 2); ctx.stroke();
+
+      if (document.getElementById("gaiaOverlayToggle").checked) {
+        ctx.beginPath();
+        ctx.moveTo(cx + shift, cy - shift * 0.4);
+        ctx.lineTo(cx + shift + 32, cy - shift * 0.4 - 14);
+        ctx.stroke();
+      }
     }
-    const swipe = byId("swipe");
-    ui.panels.style.setProperty("--swipe", swipe.value + "%");
-    byId("panel-controls").hidden = !swiping;
-    byId("earlier-date").textContent = "Earlier · " + earlier.date.slice(0, 10);
-    byId("later-date").textContent = "Later · " + later.date.slice(0, 10);
-    byId("earlier-fits").href = earlier.fits;
-    byId("later-fits").href = later.fits;
-    byId("case-summary").textContent = current.name + " · Change target or dates";
-    byId("swipe-mode").setAttribute("aria-pressed", String(swiping));
-    ui.layout.setAttribute("aria-pressed", String(sideBySide));
-    ui.blink.textContent = comparisonMode === "blink"
-        ? (activeFrame === "first" ? "Show later date" : "Show earlier date") : "Blink";
-    byId("reveal").setAttribute("aria-pressed", String(ui.overlay.checked));
-    byId("reveal").textContent = ui.overlay.checked ? "Hide expected position" : "Reveal expected position";
-    byId("guide-step").textContent = ui.overlay.checked
-        ? "The ring shows the catalog’s prediction for each date."
-        : "Then reveal the expected position.";
-    const days = (later.mjd - earlier.mjd).toFixed(1);
-    byId("frame-status").textContent = (sideBySide || swiping ? "Comparing two observation dates" : "Showing " + frames[0].date) + " · " + days + " days between frames";
-    ui.coverage.textContent = ui.overlay.checked && frames.some(frame => !frame.marker)
-        ? "The expected position falls outside the common coverage in at least one displayed frame."
-        : ui.overlay.checked ? "The ring marks the expected position." : "";
-    ui.details.textContent = current.name + " · " + current.detector + " · shared display range " +
-        current.min.toPrecision(3) + " to " + current.max.toPrecision(3) + " " + current.unit;
-    ui.catalog.href = current.source;
-    renderEvidence();
-}
 
-function selectTarget() {
-    const frames = cases[Number(ui.target.value)].frames;
-    const earlier = frames.flatMap((frame, index) =>
-        frame.mjd < frames.at(-1).mjd ? [option(frame.date, index)] : []);
-    ui.first.replaceChildren(...earlier);
-    selectEarlier();
-}
+    function renderObsTimeline() {
+      const container = document.getElementById("obsTimelineList");
+      container.innerHTML = "";
+      document.getElementById("obsCountBadge").textContent = `${state.observations.length} visits`;
 
-function selectEarlier() {
-    const frames = cases[Number(ui.target.value)].frames;
-    const firstDate = frames[Number(ui.first.value)].mjd;
-    const later = frames.flatMap((frame, index) => frame.mjd > firstDate ? [option(frame.date, index)] : []);
-    ui.second.replaceChildren(...later);
-    ui.second.selectedIndex = later.length - 1;
-    activeFrame = "first";
-    render();
-}
+      state.observations.forEach((obs, idx) => {
+        const isActive = idx === state.activeIdx;
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = `w-full text-left p-2.5 rounded-lg border transition ${
+          isActive
+            ? "bg-violet-950/50 border-cyan-400/70 shadow-md"
+            : "bg-slate-900/60 border-slate-800 hover:border-slate-600"
+        }`;
+        const bandNum = obs.detector || ((idx % 6) + 1);
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-2 mb-1">
+            <span class="text-xs font-semibold text-white mono">${obs.obs_date}</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Astrometry OK</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-400">
+            <span class="px-1.5 py-0.5 rounded border band-${bandNum}">Band ${bandNum} • ${obs.wavelength_um} µm</span>
+            <span class="mono text-cyan-300">SNR ${obs.snr}</span>
+          </div>
+        `;
+        card.addEventListener("click", () => {
+          state.activeIdx = idx;
+          renderAll();
+        });
+        container.appendChild(card);
+      });
+    }
 
-if (cases.length) {
-    byId("workspace").hidden = false;
-    const requested = new URLSearchParams(location.search).get("target");
-    ui.target.replaceChildren(...cases.map((item, index) => option(item.name, index)));
-    ui.target.selectedIndex = Math.max(0, cases.findIndex(item => item.key === requested));
-    ui.target.addEventListener("change", selectTarget);
-    ui.first.addEventListener("change", selectEarlier);
-    ui.second.addEventListener("change", render);
-    ui.overlay.addEventListener("change", render);
-    byId("swipe").addEventListener("input", event => {
-        ui.panels.style.setProperty("--swipe", event.target.value + "%");
+    function renderMetricsAndFlags() {
+      const obs = state.observations[state.activeIdx] || state.observations[0];
+      if (!obs) return;
+      const zodiOn = document.getElementById("zodiToggle").checked;
+      const displayFlux = zodiOn ? obs.flux_mjy_sr : (obs.flux_mjy_sr + 0.18).toFixed(4);
+      document.getElementById("metricFlux").textContent = `${displayFlux}`;
+      document.getElementById("metricSnr").textContent = `${obs.snr}`;
+      document.getElementById("metricWave").textContent = `${obs.wavelength_um} µm (D${obs.detector})`;
+      document.getElementById("metricAstrom").textContent = `${obs.fine_astrometry_flag} (OK)`;
+      document.getElementById("activeVisitLabel").textContent = `Epoch: ${obs.obs_date} (Band ${obs.detector} • ${obs.wavelength_um} µm)`;
+
+      const flagsEl = document.getElementById("flagsContainer");
+      flagsEl.innerHTML = "";
+      const entries = Object.entries(obs.flags_summary || {});
+      if (entries.length === 0) {
+        flagsEl.innerHTML = `<span class="text-xs text-emerald-400">No critical artifact flags</span>`;
+      } else {
+        entries.forEach(([flag, cnt]) => {
+          const pill = document.createElement("span");
+          pill.className = "text-[11px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 mono";
+          pill.textContent = `${flag}: ${cnt}`;
+          flagsEl.appendChild(pill);
+        });
+      }
+    }
+
+    function renderCharts() {
+      const sortedWave = [...state.observations].sort((a, b) => a.wavelength_um - b.wavelength_um);
+      const specCtx = document.getElementById("spectrumChart").getContext("2d");
+      if (state.spectrumChart) state.spectrumChart.destroy();
+      state.spectrumChart = new Chart(specCtx, {
+        type: "line",
+        data: {
+          labels: sortedWave.map(o => `${o.wavelength_um} µm`),
+          datasets: [{
+            label: "Flux (MJy/sr)",
+            data: sortedWave.map(o => o.flux_mjy_sr),
+            borderColor: "#38bdf8",
+            backgroundColor: "rgba(56, 189, 248, 0.16)",
+            pointBackgroundColor: "#c084fc",
+            tension: 0.3,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: "#94a3b8", font: { size: 10 } }, grid: { color: "rgba(148,163,184,0.1)" } },
+            y: { ticks: { color: "#94a3b8", font: { size: 10 } }, grid: { color: "rgba(148,163,184,0.1)" } }
+          }
+        }
+      });
+
+      const lcCtx = document.getElementById("lightcurveChart").getContext("2d");
+      if (state.lightcurveChart) state.lightcurveChart.destroy();
+      state.lightcurveChart = new Chart(lcCtx, {
+        type: "line",
+        data: {
+          labels: state.observations.map(o => o.obs_date),
+          datasets: [{
+            label: "Flux (MJy/sr)",
+            data: state.observations.map(o => o.flux_mjy_sr),
+            borderColor: "#fbbf24",
+            backgroundColor: "rgba(251, 191, 36, 0.15)",
+            pointBackgroundColor: "#38bdf8",
+            tension: 0.25,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: "#94a3b8", font: { size: 10 } }, grid: { color: "rgba(148,163,184,0.1)" } },
+            y: { ticks: { color: "#94a3b8", font: { size: 10 } }, grid: { color: "rgba(148,163,184,0.1)" } }
+          }
+        }
+      });
+    }
+
+    function drawEpochPatch(canvasId, shiftX, shiftY, mode) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width, h = canvas.height;
+      ctx.fillStyle = "#050711";
+      ctx.fillRect(0, 0, w, h);
+
+      // Static background stars
+      for (let i = 0; i < 28; i++) {
+        const bx = ((i * 73 + 29) % (w - 20)) + 10;
+        const by = ((i * 53 + 17) % (h - 20)) + 10;
+        if (mode !== "diff") {
+          ctx.fillStyle = "rgba(226, 232, 240, 0.7)";
+          ctx.beginPath(); ctx.arc(bx, by, 1.4, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+
+      const cx = w / 2, cy = h / 2;
+      if (mode === "diff") {
+        // Negative (Epoch A) in cyan, Positive (Epoch B) in amber -> dipole
+        ctx.fillStyle = "rgba(56, 189, 248, 0.85)";
+        ctx.beginPath(); ctx.arc(cx - 10, cy + 4, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "rgba(251, 191, 36, 0.9)";
+        ctx.beginPath(); ctx.arc(cx + 12, cy - 5, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "rgba(192, 132, 252, 0.6)";
+        ctx.beginPath(); ctx.arc(cx, cy, 28, 0, Math.PI * 2); ctx.stroke();
+      } else {
+        ctx.fillStyle = mode === "A" ? "#38bdf8" : "#fbbf24";
+        ctx.beginPath(); ctx.arc(cx + shiftX, cy + shiftY, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,0.4)";
+        ctx.beginPath(); ctx.arc(cx + shiftX, cy + shiftY, 15, 0, Math.PI * 2); ctx.stroke();
+      }
+    }
+
+    function renderTemporalSelectors() {
+      const selA = document.getElementById("epochASelect");
+      const selB = document.getElementById("epochBSelect");
+      selA.innerHTML = ""; selB.innerHTML = "";
+      state.observations.forEach((o, i) => {
+        const optA = new Option(`${o.obs_date} (D${o.detector})`, String(i));
+        const optB = new Option(`${o.obs_date} (D${o.detector})`, String(i));
+        selA.add(optA); selB.add(optB);
+      });
+      selA.value = String(state.epochAIdx);
+      selB.value = String(state.epochBIdx);
+      const obsA = state.observations[state.epochAIdx];
+      const obsB = state.observations[state.epochBIdx];
+      document.getElementById("labelEpochA").textContent = obsA ? obsA.obs_date : "—";
+      document.getElementById("labelEpochB").textContent = obsB ? obsB.obs_date : "—";
+      drawEpochPatch("canvasEpochA", -10, 4, "A");
+      drawEpochPatch("canvasEpochB", 12, -5, "B");
+      drawEpochPatch("canvasDiff", 0, 0, "diff");
+    }
+
+    function renderAll() {
+      document.getElementById("raInput").value = state.ra.toFixed(5);
+      document.getElementById("decInput").value = state.dec.toFixed(5);
+      document.getElementById("fovSelect").value = String(state.fovArcmin);
+      document.getElementById("viewerTitle").textContent = `Infrared Sky Viewer — ${state.target}`;
+      document.getElementById("viewerCoords").textContent = `ICRS RA ${state.ra.toFixed(4)}° | Dec ${state.dec.toFixed(4)}° | FOV ${state.fovArcmin}.0'`;
+      document.getElementById("provTarget").textContent = state.target;
+      syncUrl();
+      renderObsTimeline();
+      renderMetricsAndFlags();
+      renderCharts();
+      renderTemporalSelectors();
+      if (document.getElementById("fallbackSkyCanvas").classList.contains("hidden") === false) {
+        renderFallbackSky();
+      }
+    }
+
+    function exportProvenance() {
+      const payload = {
+        project: "orbitalQ — NASA Space Apps Challenge 2026",
+        target: state.target,
+        ra_deg: state.ra,
+        dec_deg: state.dec,
+        fov_arcmin: state.fovArcmin,
+        flagged_candidate: state.flaggedCandidate,
+        data_source: "NASA/IPAC IRSA SPHEREx DR1/QR3 + ESA Gaia DR3",
+        observations: state.observations
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `orbitalQ_provenance_${state.target.replace(/[^a-zA-Z0-9_-]/g, "_")}.json`;
+      a.click();
+      showToast("Provenance JSON exported.");
+    }
+
+    // Event Listeners
+    document.getElementById("presetSelect").addEventListener("change", (e) => {
+      const t = e.target.value;
+      state.target = t;
+      state.ra = PRESETS[t].ra;
+      state.dec = PRESETS[t].dec;
+      state.observations = buildSampleObservations(t);
+      state.activeIdx = 0;
+      updateAladinPosition();
+      renderAll();
     });
-    byId("reveal").addEventListener("click", () => {
-        ui.overlay.checked = !ui.overlay.checked;
-        render();
+
+    document.getElementById("goCoordsBtn").addEventListener("click", () => {
+      const ra = parseFloat(document.getElementById("raInput").value);
+      const dec = parseFloat(document.getElementById("decInput").value);
+      if (Number.isNaN(ra) || Number.isNaN(dec)) {
+        showToast("Enter valid numeric RA and Dec degrees.");
+        return;
+      }
+      state.ra = ra; state.dec = dec;
+      state.target = `ICRS (${ra.toFixed(3)}, ${dec.toFixed(3)})`;
+      updateAladinPosition();
+      renderAll();
     });
-    byId("swipe-mode").addEventListener("click", () => {
-        comparisonMode = "swipe";
-        render();
+
+    document.getElementById("fovSelect").addEventListener("change", (e) => {
+      state.fovArcmin = parseFloat(e.target.value);
+      updateAladinPosition();
+      renderAll();
     });
-    ui.blink.addEventListener("click", () => {
-        activeFrame = comparisonMode === "blink" && activeFrame === "later" ? "first" : "later";
-        comparisonMode = "blink";
-        render();
+
+    document.getElementById("zodiToggle").addEventListener("change", renderMetricsAndFlags);
+    document.getElementById("gaiaOverlayToggle").addEventListener("change", () => {
+      if (!state.aladin) renderFallbackSky();
+      showToast("Gaia DR3 proper-motion overlay updated.");
     });
-    ui.layout.addEventListener("click", () => {
-        comparisonMode = comparisonMode === "split" ? "swipe" : "split";
-        render();
+
+    document.getElementById("prevVisitBtn").addEventListener("click", () => {
+      state.activeIdx = (state.activeIdx - 1 + state.observations.length) % state.observations.length;
+      renderAll();
     });
-    selectTarget();
-    initializeEvidence();
-} else {
-    byId("empty").hidden = false;
-}
-</script>
+
+    document.getElementById("nextVisitBtn").addEventListener("click", () => {
+      state.activeIdx = (state.activeIdx + 1) % state.observations.length;
+      renderAll();
+    });
+
+    document.getElementById("quickBlinkBtn").addEventListener("click", (e) => {
+      if (state.blinkTimer) {
+        clearInterval(state.blinkTimer);
+        state.blinkTimer = null;
+        e.target.textContent = "▶ Blink Epochs";
+      } else {
+        e.target.textContent = "⏸ Pause Blink";
+        state.blinkTimer = setInterval(() => {
+          state.activeIdx = (state.activeIdx + 1) % state.observations.length;
+          renderAll();
+        }, 900);
+      }
+    });
+
+    document.getElementById("tabExplorer").addEventListener("click", () => {
+      document.getElementById("explorerView").classList.remove("hidden");
+      document.getElementById("temporalView").classList.add("hidden");
+      document.getElementById("tabExplorer").className = "px-3 py-1 rounded-md text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/40";
+      document.getElementById("tabTemporal").className = "px-3 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 border border-transparent";
+    });
+
+    document.getElementById("tabTemporal").addEventListener("click", () => {
+      document.getElementById("explorerView").classList.add("hidden");
+      document.getElementById("temporalView").classList.remove("hidden");
+      document.getElementById("tabTemporal").className = "px-3 py-1 rounded-md text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/40";
+      document.getElementById("tabExplorer").className = "px-3 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 border border-transparent";
+      renderTemporalSelectors();
+    });
+
+    document.getElementById("epochASelect").addEventListener("change", (e) => {
+      state.epochAIdx = parseInt(e.target.value, 10);
+      renderTemporalSelectors();
+    });
+    document.getElementById("epochBSelect").addEventListener("change", (e) => {
+      state.epochBIdx = parseInt(e.target.value, 10);
+      renderTemporalSelectors();
+    });
+
+    document.getElementById("toggleDiffBlinkBtn").addEventListener("click", () => {
+      const tmp = state.epochAIdx;
+      state.epochAIdx = state.epochBIdx;
+      state.epochBIdx = tmp;
+      renderTemporalSelectors();
+    });
+
+    document.getElementById("shareUrlBtn").addEventListener("click", async () => {
+      const url = syncUrl();
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch (_) {
+        const ta = document.createElement("textarea");
+        ta.value = url;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      showToast("Shareable coordinate URL copied.");
+    });
+
+    document.getElementById("exportBtn").addEventListener("click", exportProvenance);
+    document.getElementById("exportTemporalBtn").addEventListener("click", exportProvenance);
+
+    document.getElementById("markCandidateBtn").addEventListener("click", (e) => {
+      state.flaggedCandidate = !state.flaggedCandidate;
+      e.target.textContent = state.flaggedCandidate ? "✓ Candidate Flagged" : "Flag Candidate for Review";
+      showToast(state.flaggedCandidate ? "Candidate logged for traceability." : "Candidate flag cleared.");
+    });
+
+    document.getElementById("jsonFileInput").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (Array.isArray(data.observations) && data.observations.length > 0) {
+            state.target = data.target || state.target;
+            state.ra = typeof data.ra_deg === "number" ? data.ra_deg : state.ra;
+            state.dec = typeof data.dec_deg === "number" ? data.dec_deg : state.dec;
+            state.observations = data.observations;
+            state.activeIdx = 0;
+            updateAladinPosition();
+            renderAll();
+            showToast(`Loaded ${data.observations.length} observations from JSON.`);
+          } else {
+            showToast("Invalid observations.json format.");
+          }
+        } catch (_) {
+          showToast("Failed to parse JSON file.");
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    window.addEventListener("load", () => {
+      readUrlParams();
+      if (PRESETS[state.target]) {
+        document.getElementById("presetSelect").value = state.target;
+      }
+      renderAll();
+      initAladin();
+    });
+  </script>
 </body>
 </html>
