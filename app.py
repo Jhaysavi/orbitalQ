@@ -26,8 +26,32 @@ from core.validation import chronological, comparison_warning
 
 st.set_page_config(page_title="OrbitalQ | SPHEREx Explorer", page_icon="🌌", layout="wide")
 
-st.title("OrbitalQ")
-st.caption("Explore the infrared sky with real SPHEREx observations. Select a target to get started.")
+st.markdown("""
+<style>
+.stApp {
+    background: radial-gradient(ellipse at 15% 0%, #171630 0%, #060812 55%);
+}
+.oq-hero {
+    padding: clamp(1.1rem, 4vw, 2.2rem);
+    border: 1px solid #3b3561;
+    border-radius: 18px;
+    background: radial-gradient(ellipse at 85% 0%, #173043 0%, #101529 58%);
+}
+.oq-hero .oq-label { color: #84e9f5; font: 600 .75rem ui-monospace, monospace; }
+.oq-hero h1 { color: #f1f5ff; margin: .25rem 0; padding: 0; font-size: clamp(2rem, 5vw, 3.4rem); }
+.oq-hero p { color: #c5d2eb; margin: 0; }
+[data-testid="stMetric"], [data-testid="stFileUploaderDropzone"] {
+    border: 1px solid #3b3561; border-radius: 12px; padding: .75rem;
+    background: #101529;
+}
+[data-testid="stMetricValue"] { font-family: ui-monospace, monospace; }
+</style>
+<header class="oq-hero">
+  <div class="oq-label">SPHEREx INFRARED SKY EXPLORER</div>
+  <h1>OrbitalQ</h1>
+  <p>Explore real observations and compare the same region of the sky across dates.</p>
+</header>
+""", unsafe_allow_html=True)
 
 CUBE_URL = (
     "https://nasa-irsa-spherex.s3.us-east-1.amazonaws.com/"
@@ -303,14 +327,20 @@ def display_array(data, title, marker=None, percentiles=None, stretch_limits=Non
     if not np.isfinite(lo) or not np.isfinite(hi) or lo == hi:
         lo = float(np.nanmin(data[finite]))
         hi = float(np.nanmax(data[finite])) if np.nanmax(data[finite]) > lo else lo + 1
-    fig, ax = plt.subplots(figsize=(7, 6))
+    fig, ax = plt.subplots(figsize=(7, 6), facecolor="#0d1122")
+    ax.set_facecolor("#060812")
+    ax.tick_params(colors="#bdcbea")
+    for spine in ax.spines.values():
+        spine.set_color("#3b3561")
     im = ax.imshow(data, origin="lower", cmap="inferno", vmin=lo, vmax=hi)
     if marker is not None:
         ax.plot(marker[0], marker[1], marker="+", color="cyan", markersize=14, mew=2)
-    ax.set_title(title)
-    ax.set_xlabel("Cutout X (pixel)")
-    ax.set_ylabel("Cutout Y (pixel)")
-    fig.colorbar(im, ax=ax, label="MJy/sr")
+    ax.set_title(title, color="#f1f5ff")
+    ax.set_xlabel("Cutout X (pixel)", color="#bdcbea")
+    ax.set_ylabel("Cutout Y (pixel)", color="#bdcbea")
+    colorbar = fig.colorbar(im, ax=ax, label="MJy/sr")
+    colorbar.ax.tick_params(colors="#bdcbea")
+    colorbar.ax.yaxis.label.set_color("#bdcbea")
     fig.tight_layout()
     st.pyplot(fig, clear_figure=True)
     plt.close(fig)
@@ -422,11 +452,12 @@ def observation_csv(frames, target_name, ra, dec, selected_index=None, compariso
     return output.getvalue()
 
 
-tab_cube, tab_visits, tab_about = st.tabs(
-    ["Real DR1 sky preview", "Compare Level 2 visits", "About orbitalQ"]
+view = st.radio(
+    "Explorer view", ["Compare Level 2 visits", "DR1 sky preview", "About OrbitalQ"],
+    horizontal=True,
 )
 
-with tab_cube:
+if view == "DR1 sky preview":
     st.subheader("SPHEREx DR1 All-Sky Cube")
     st.info(
         "This is a real SPHEREx DR1 product. Its 102 planes are wavelength channels, "
@@ -534,34 +565,12 @@ with tab_cube:
             "to download the entire 306 MB tile."
         )
 
-with tab_visits:
+elif view == "Compare Level 2 visits":
     st.subheader("Explore real observations")
     st.caption(
         "Start with a verified real-data example, browse public S3 folders, "
-        "or bring your own FITS files. Every loaded image is checked against its WCS."
+        "or upload FITS files you already downloaded. Every loaded image is checked against its WCS."
     )
-
-    if st.session_state.pop("demo_sequence_pending", False):
-        demo_frames = []
-        demo_errors = []
-        with st.spinner("Loading two public SPHEREx DR1 observations…"):
-            for url in DEMO_FITS_URLS:
-                try:
-                    demo_frames.append(cached_remote_level2(
-                        LEVEL2_CACHE_VERSION,
-                        url,
-                        float(ra),
-                        float(dec),
-                        int(cutout_size),
-                    ))
-                except Exception as exc:
-                    demo_errors.append(f"{url.rsplit('/', 1)[-1]}: {exc}")
-        st.session_state["remote_frames"] = demo_frames
-        st.session_state["remote_errors"] = demo_errors
-        st.session_state["demo_sequence_result"] = {
-            "loaded": len(demo_frames),
-            "errors": demo_errors,
-        }
 
     with st.container(border=True):
         demo_copy, demo_action = st.columns([3, 1])
@@ -573,7 +582,7 @@ with tab_visits:
             )
             st.caption(
                 "This example changes the target to a verified field at "
-                "RA 160.6180°, Dec +30.6694°. It is not WISE 0855."
+                "RA 160.6180°, Dec +30.6694°. "
             )
         with demo_action:
             st.write("")
@@ -583,6 +592,33 @@ with tab_visits:
                 on_click=activate_demo_sequence,
                 use_container_width=True,
             )
+    if st.session_state.pop("demo_sequence_pending", False):
+        demo_frames = []
+        demo_errors = []
+        with st.status("Loading real SPHEREx observations…", expanded=True) as status:
+            for index, url in enumerate(DEMO_FITS_URLS, start=1):
+                st.write(f"Reading and checking observation {index} of {len(DEMO_FITS_URLS)}…")
+                try:
+                    demo_frames.append(cached_remote_level2(
+                        LEVEL2_CACHE_VERSION,
+                        url,
+                        float(ra),
+                        float(dec),
+                        int(cutout_size),
+                    ))
+                except Exception as exc:
+                    demo_errors.append(f"{url.rsplit('/', 1)[-1]}: {exc}")
+            if demo_errors:
+                status.update(label="Some observations could not load", state="error")
+            else:
+                status.update(label="Both observations loaded", state="complete", expanded=False)
+        st.session_state["remote_frames"] = demo_frames
+        st.session_state["remote_errors"] = demo_errors
+        st.session_state["demo_sequence_result"] = {
+            "loaded": len(demo_frames),
+            "errors": demo_errors,
+        }
+
     demo_result = st.session_state.get("demo_sequence_result")
     if demo_result:
         if demo_result["loaded"] == len(DEMO_FITS_URLS):
@@ -1031,7 +1067,7 @@ with tab_visits:
         elif not errors:
             st.info("Upload Level 2 FITS files to begin.")
 
-with tab_about:
+else:
     st.subheader("What orbitalQ does")
     st.write(
         "orbitalQ is a target-centred interface for exploring real SPHEREx observations "
