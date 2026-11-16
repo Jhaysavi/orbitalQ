@@ -746,14 +746,13 @@ def show_packaged_examples():
 
 
 
-@st.cache_data(ttl=900, show_spinner=False)
 def search_official_observations(ra, dec, releases):
     result = search_level2_footprints(
         SkyCoord(ra=ra * u.deg, dec=dec * u.deg, frame="icrs"),
         ra, dec, radius_deg=0.01, max_results=24, releases=releases, timeout=30,
     )
     if not result.get("ok"):
-        raise RuntimeError("NASA/IPAC is temporarily unavailable. Retry or select a single release. Loaded images are retained.")
+        raise RuntimeError(result.get("message", "NASA/IPAC is temporarily unavailable. Retry or select a single release."))
     return result
 
 
@@ -778,15 +777,19 @@ def render_official_archive():
             with st.spinner("Querying NASA/IPAC and checking footprints…"):
                 try:
                     result = search_official_observations(ra, dec, tuple(releases))
-                    st.session_state["official_search"] = (ra, dec, result)
+                    st.session_state["official_search"] = (ra, dec, tuple(releases), result)
                 except Exception as exc:
                     st.error(f"Archive unavailable: {exc}")
     saved = st.session_state.get("official_search")
     if not saved:
         st.info("Submit a position to retrieve official observations.")
         return
-    search_ra, search_dec, result = saved
-    st.caption(f"Results for RA {search_ra:.6f}°, Dec {search_dec:.6f}°")
+    if len(saved) != 4:
+        st.session_state.pop("official_search", None)
+        st.info("Please submit a fresh search.")
+        return
+    search_ra, search_dec, searched_releases, result = saved
+    st.caption(f"Last submitted search: RA {search_ra:.6f}°, Dec {search_dec:.6f}° · {' / '.join(searched_releases)}")
     if not result.get("ok"):
         st.warning(result.get("message", "Archive unavailable."))
         return
@@ -794,11 +797,16 @@ def render_official_archive():
     matches = list({item["source_url"]: item for item in result.get("matches", [])}.values())
     matches.sort(key=lambda item: item["mjd_obs"] if np.isfinite(item["mjd_obs"]) else float("inf"))
     if result.get("rejected"):
-        with st.expander("Query limits and rejected candidates"):
+        with st.expander("Query limits and rejected candidates", expanded=not matches):
             for reason in result["rejected"]:
                 st.text(reason)
     if not matches:
-        st.warning("No verified cutouts in this bounded query. This does not prove absence of observations.")
+        st.warning("No images could be verified. Review the diagnostics above and submit again to retry the live service.")
+        available = [case for case in read_packaged_observations() if len(case.get("frames", [])) >= 2]
+        if available:
+            st.caption("You can explore prepared sequences while the live archive is unavailable. These are separate from this search.")
+            chosen = st.selectbox("Available prepared sequence", [case["name"] for case in available], key="archive_fallback_target")
+            st.button("Open prepared sequence →", on_click=open_prepared_field, args=(chosen,), key="archive_fallback_open")
         return
     selected = st.selectbox("Verified exposure", range(len(matches)),
         format_func=lambda i: f"{matches[i]['date_obs'] or 'Date unavailable'} · {matches[i]['release']} · {matches[i]['filename']}")
