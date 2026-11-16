@@ -1,108 +1,111 @@
-# OrbitalQ — Explore the Changing Infrared Universe
+# orbitalQ — Explore the changing infrared sky
 
-OrbitalQ is a lightweight Streamlit application for exploring genuine
-NASA/IPAC IRSA SPHEREx data. It separates a fast All-Sky Cube preview from a
-time-ordered viewer for Level 2 Spectral Image FITS observations.
+orbitalQ is a public-facing Streamlit application for exploring real NASA/IPAC
+SPHEREx observations. It combines a fast DR1 All-Sky Cube preview with a
+time-aware workspace for Level 2 Spectral Image FITS observations.
 
-The application is exploratory: a visible change is not a discovery claim.
-Any candidate motion or variability needs WCS registration, compatible
-wavelengths, quality masks, uncertainty estimates, PSF/background checks and
+The project is an inspection and education tool, not a discovery pipeline. A
+visual change is only a candidate signal: scientific interpretation requires
+epoch-aware coordinates, WCS registration, compatible bandpasses and
+detectors, quality masks, uncertainty estimates, PSF/background checks, and
 independent validation.
 
-## Run the application
+## What the application does
 
-From the repository root (Python 3.10 or later):
+- Accepts a target preset or ICRS right ascension and declination.
+- Shows a real SPHEREx All-Sky Cube cutout and labels its spectral channel
+  correctly. Spectral channels are wavelengths, not observation dates.
+- Browses bounded public DR1 and QR3 Level 2 archive prefixes.
+- Reads uploaded or public Level 2 MEF FITS files, validates their celestial
+  WCS, and extracts target-centred cutouts.
+- Orders visits by `MJD-OBS`/`DATE-OBS` and exposes detector, release, units,
+  wavelength metadata, `FLAGS`, `VARIANCE`, and provenance.
+- Provides blink, side-by-side, and shared-stretch visual comparisons without
+  presenting them as calibrated difference measurements.
+- Produces a provenance-oriented Markdown report for reproducibility.
+
+## Quick start
+
+Python 3.10 or newer is supported. From the repository root:
 
 ```bash
 python3 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -r requirements.txt
 .venv/bin/streamlit run app.py
 ```
 
-The app can display a small real SPHEREx DR1 All-Sky Cube cutout from the
-public cloud object, resolve an object name when the configured name service
-can resolve it, and browse bounded directory listings from the public SPHEREx
-S3 archive. Browsing is by release, planning period, processing run and
-detector; it is not presented as a complete coordinate search. Selected remote
-FITS files pass an actual WCS check before their cutouts are loaded. The app
-also offers a one-click sequence of two genuine DR1 observations at a clearly
-identified example field. This visual example is not WISE 0855 and does not
-claim astrophysical variability.
+The app needs no credentials. It reads public archive data over HTTPS when
+network access is available; uploaded FITS files remain available when the
+archive cannot be reached. Remote data are cached only in the running process
+and are not a durable archive.
 
-In the **Compare Level 2 visits** tab, use the public S3 browser, load the
-verified example sequence, paste a public FITS URL, or upload genuine Level 2
-MEF files. The app reads `DATE-OBS`, `MJD-OBS`, `OBSID`, detector, units, WCS,
-`FLAGS` and `VARIANCE`; no synthetic image or coverage claim is substituted
-when retrieval fails. Before/after and blink views use a shared image stretch,
-but remain visual aids rather than scientific difference measurements.
-Streamlit caches successful remote cutouts and archive listings in-process;
-uploaded FITS files and local caches are not committed.
+## Verification and builds
 
-## Streamlit Community Cloud
-
-1. Push the prepared repository to a GitHub branch you control.
-2. In [Streamlit Community Cloud](https://share.streamlit.io/), choose **Create
-   app**, select the repository and branch, and set the main file to `app.py`
-   at the repository root.
-3. In **Advanced settings**, choose Python 3.10 or later, then deploy. Cloud
-   installs the runtime dependencies from `requirements.txt`.
-4. No secrets or credentials are required. Do not add local FITS files,
-   `.env` files, or `.streamlit/secrets.toml` to Git.
-
-The app accesses the public SPHEREx S3 archive over HTTPS. If remote browsing
-or file access is unavailable, the app reports the error and local FITS
-uploads remain available. Community Cloud storage is ephemeral; its cache is
-not a durable archive.
-
-## Tests and checks
+Run the deterministic software checks with the same interpreter used for the
+application:
 
 ```bash
 .venv/bin/python -m unittest discover -s tests -v
-.venv/bin/python -m compileall -q app.py core tests study/scripts
+.venv/bin/python -m compileall -q app.py core tests study/scripts scripts build_viewer.py
 ```
 
-The unit tests are in [tests/](./tests/). Network archive probes and research
-scripts are intentionally not part of the automated test suite; see
-[study/](./study/) for their inputs, outputs and limitations.
+The static comparison viewer is built for Vercel with:
 
-## Repository map
+```bash
+node scripts/build-vercel.mjs
+```
 
-| Path | Purpose |
+That build uses `requirements-viewer.txt`, validates a bounded real-data
+sample when the archive is reachable, and updates the packaged case data only
+when validation and manifest generation succeed. If the archive is
+temporarily unavailable, the script keeps the already-packaged viewer and
+reports the fallback; this is an availability fallback, not a scientific
+result.
+
+For local development, see [docs/development.md](./docs/development.md).
+
+## Scientific basis and limitations
+
+SPHEREx DR1 and QR3 are the supported releases for new work. DR1’s All-Sky
+Cube contains 102 spectral planes; those planes describe wavelength channels,
+not a time series. Temporal comparisons use separate Level 2 observations and
+their actual observation metadata.
+
+Level 2 `IMAGE` values are calibrated surface brightness. `ZODI` is a
+separate zodiacal-light model, while `FLAGS`, `VARIANCE`, `EPSF`, and
+`WCS-WAVE` require product-specific interpretation. A target coordinate with
+proper motion must be propagated from a stated astrometric reference epoch;
+the WISE 0855 challenge coordinate is intentionally not treated as valid at
+every epoch.
+
+Read [docs/scientific-methods.md](./docs/scientific-methods.md) for the data
+model, comparison safeguards, references, and study methodology.
+
+## Repository guide
+
+| Path | Role |
 | --- | --- |
-| `app.py` | Streamlit views, archive controls and observation workflow |
-| `ui/` | [Streamlit presentation components and preview assets](docs/interface.md) |
-| `core/` | WCS, FITS, provenance and scientific validation helpers |
-| `config/` | Target presets and other small, reviewable configuration |
-| `data/` | Local cutouts, previews, manifests and cache placeholders |
-| `tests/` | Fast deterministic unit tests |
-| `study/scripts/` | Archive experiments, inventory tools and coordinate studies |
-| `study/results/` | Generated study tables and saved archive responses |
-| `scripts/` | Reusable retrieval/deployment utilities |
-| `docs/` | Scientific method, source references and maintenance notes |
+| [app.py](./app.py) | Streamlit entry point and application workflow |
+| [core/](./core/) | Reusable archive, FITS, WCS, validation, and provenance logic |
+| [ui/](./ui/) | Presentation components and interface assets |
+| [config/](./config/) | Reviewed target presets |
+| [tests/](./tests/) | Deterministic unit tests that do not require the live archive |
+| [study/](./study/) | Preserved exploratory scripts, results, and research notes |
+| [scripts/](./scripts/) | Reusable retrieval and deployment utilities |
+| [docs/](./docs/) | Scientific method, interface, structure, and development documentation |
+| [dist/](./dist/) | Static viewer published by the Vercel build |
 
-Large inventories, FITS files, caches and generated study products stay local
-and are ignored by Git. Their provenance should be recorded in a manifest or
-in the study notes rather than committed to the repository.
+The research material in [study/README.md](./study/README.md) is retained as
+evidence of the project’s data investigation. Generated FITS files, caches,
+inventories, and virtual environments are intentionally excluded from source
+control.
 
-## Scientific data policy
+## Sources and attribution
 
-- Use SPHEREx **DR1** for Surveys 1–2 and **QR3** for Surveys 3–4. DR1 and
-  QR3 supersede QR2 for new work.
-- The All-Sky Cube has 102 nominal spectral channels. Those channels are
-  wavelengths, not observation dates.
-- Temporal ordering uses separate Level 2 observations and their actual
-  `DATE-OBS`, `MJD-OBS` and `OBSID` metadata.
-- Comparisons must check wavelength/bandpass compatibility, detector and
-  processing version, WCS alignment, `FLAGS`, `VARIANCE`, PSF/ePSF and
-  background/calibration differences.
-- Target coordinates with proper motion must be propagated to the observation
-  epoch when reference astrometry is available. The challenge coordinate for
-  WISE 0855 is not silently treated as valid at every epoch.
-
-Read [docs/scientific-methods.md](./docs/scientific-methods.md) for the full
-method and source list, and [study/README.md](./study/README.md) for the
-research scripts, including
-[sample_dr1_period_dates.py](./study/scripts/sample_dr1_period_dates.py).
-The older project brief remains available in
-[README_ORBITALQ.md](./README_ORBITALQ.md), and the original retrieval notes
-in [README-MILESTONE-01.md](./README-MILESTONE-01.md).
+The project uses public NASA/IPAC IRSA SPHEREx data and follows the official
+SPHEREx data-product documentation. The full source list and publication
+acknowledgement guidance are in
+[docs/scientific-methods.md](./docs/scientific-methods.md). The packaged
+static viewer also retains its third-party SkyShift license in
+[dist/licenses/skyshift.txt](./dist/licenses/skyshift.txt).

@@ -1,6 +1,0 @@
-astroquery>=0.4.10
-astropy>=6.1
-numpy>=1.26
-matplotlib>=3.8
-requests>=2.31
-pandas>=2.2
