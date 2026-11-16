@@ -649,9 +649,11 @@ def read_packaged_observations():
     html = (root / "dist" / "index.html").read_text(encoding="utf-8")
     start = '<script id="case-data" type="application/json">'
     _, found, block = html.partition(start)
-    if not found:
-        return []
-    return json.loads(block.split("</script>", 1)[0])
+    cases = json.loads(block.split("</script>", 1)[0]) if found else []
+    extra_path = root / "data" / "packaged_sequences.json"
+    if extra_path.exists():
+        cases.extend(json.loads(extra_path.read_text(encoding="utf-8")))
+    return list({case["key"]: case for case in cases}.values())
 
 
 def display_time_lapse(frames):
@@ -707,6 +709,16 @@ def show_packaged_examples():
             mode = st.segmented_control("Comparison mode", ["Time-lapse", "Swipe"], default="Time-lapse") or "Time-lapse"
             st.caption(f"{case['detector']} · {len(frames)} dated observations")
             st.write(case["description"])
+            if case.get("processing_note"):
+                with st.expander("Processing and source details"):
+                    st.write(case["processing_note"])
+                    st.markdown("[SkyShift MIT license](https://github.com/SouBeatrizKaroline/NasaSpaceApp_OrbitalQ/blob/main/dist/licenses/skyshift.txt)")
+                    st.dataframe(
+                        [{"date": item["date"], "wavelength_um": item["wavelength"],
+                          "obsid": item.get("obsid", ""), "official_fits": item["fits"]}
+                         for item in frames],
+                        hide_index=True, use_container_width=True,
+                    )
             if case.get("snapshot"):
                 st.markdown(f"[Processed cutout provenance ↗]({case['snapshot']})")
     with viewport:
