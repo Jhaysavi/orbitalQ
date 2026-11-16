@@ -19,7 +19,7 @@
     main {
         overflow: hidden;
         border: 1px solid var(--line);
-        border-radius: 16px;
+        border-radius: 20px;
         background: linear-gradient(180deg, #181426 0%, #13101e 100%);
     }
     .readout, .controls, .timeline-header {
@@ -30,7 +30,7 @@
         gap: .35rem .8rem;
     }
     .readout {
-        padding: .6rem .9rem;
+        padding: .9rem 1.1rem;
         background: rgba(255, 255, 255, .02);
     }
     .readout small, .timeline-header span {
@@ -53,7 +53,7 @@
         display: grid;
         place-items: center;
         overflow: hidden;
-        height: clamp(190px, 46vw, 290px);
+        height: clamp(220px, 46vw, 330px);
         border-block: 1px solid var(--line);
         background:
             radial-gradient(circle at center, rgba(209, 186, 255, .09) 0%, transparent 58%),
@@ -103,7 +103,7 @@
         border-radius: 50%;
         box-shadow: 0 0 0 1px rgba(13, 11, 21, .5);
     }
-    .timeline { padding: .6rem .9rem .7rem; }
+    .timeline { padding: 1rem 1.1rem; }
     .timeline-header { margin-bottom: .2rem; }
     .timeline-header strong { font-size: .86rem; }
     input { accent-color: var(--amber); cursor: pointer; }
@@ -117,7 +117,7 @@
         padding: 2px 2px 5px;
     }
     button, select {
-        min-height: 32px;
+        min-height: 40px;
         border: 1px solid var(--line);
         border-radius: 8px;
         background: var(--panel);

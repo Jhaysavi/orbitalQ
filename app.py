@@ -20,6 +20,7 @@ from core.archive import (
     is_supported_spherex_url,
     list_spherex_level2_files,
     list_spherex_prefixes,
+    search_level2_footprints,
 )
 from core.coordinates import is_inside_image, pixel_scale_arcsec, world_to_pixel_one
 from core.fits_reader import read_level2
@@ -98,6 +99,7 @@ EXPLORER_VIEWS = {
     "Ready-to-view examples": "Compare visits",
     "Real DR1 sky preview": "Spectral preview",
     "Compare Level 2 visits": "FITS workspace",
+    "Official archive": "Search NASA archive",
 }
 
 
@@ -136,77 +138,166 @@ def render_site_navigation():
 
 
 def render_home():
+    st.markdown("""
+<style>
+.oq-home-copy h1 { max-width:17ch; font-size:clamp(2.2rem,4.2vw,4rem); }
+.oq-home-copy .oq-home-note { font-size:.8rem; color:#bcb0ca; margin-top:1rem; }
+.oq-home-section { margin:2.8rem 0 1rem; }
+.oq-home-section h2 { max-width:28ch; color:#f6f0ff; font-size:clamp(1.5rem,3vw,2.2rem); letter-spacing:-.035em; line-height:1.2; padding:.4rem 0; }
+.oq-home-section > p { max-width:72ch; color:#c9bfd9; line-height:1.75; }
+.oq-home-features { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; margin:1.2rem 0; padding:0; list-style:none; }
+.oq-home-feature { padding:1.6rem; min-width:0; border:1px solid #4d3c59; border-radius:20px; background:linear-gradient(145deg,#261b33,#15111f); }
+.oq-home-feature h3 { color:#f6f0ff; font-size:1.2rem; padding:.7rem 0; }
+.oq-home-feature p { color:#c9bfd9; line-height:1.7; margin:0; }
+.oq-home-number { display:inline-grid; place-items:center; width:40px; height:40px; border:1px solid #80618d; border-radius:12px; background:#372340; color:#ffcf93; font:700 .9rem monospace; }
+.oq-home-strip { display:flex; flex-wrap:wrap; gap:.65rem; padding:1.3rem 0; border-bottom:1px solid #41324e; }
+.oq-home-strip span { color:#dacbe8; font-size:.8rem; padding:.45rem .8rem; border:1px solid #493652; border-radius:999px; }
+.st-key-oq-home-cta { margin-top:2rem; padding:clamp(1.4rem,3vw,2.3rem); border:1px solid #78546f; border-radius:22px; background:linear-gradient(120deg,#3a253a,#21182e); }
+.st-key-oq-home-cta h2 { color:#ffe0b7; padding:0; }
+.st-key-oq-home-cta p { color:#d5c7df; }
+@media(max-width:760px) { .oq-home-features { grid-template-columns:1fr; } }
+</style>
+""", unsafe_allow_html=True)
     with st.container(key="oq-landing"):
         intro, observation = st.columns([1.05, 1], vertical_alignment="center", gap="large")
         with intro:
             st.markdown("""
 <div class="oq-home-copy">
-  <p class="oq-section-label">NASA Space Apps 2026 / Planet X and SPHEREx</p>
-  <h1>Watch the infrared <em>sky change.</em></h1>
-  <p>Revisit the same field across months of NASA SPHEREx observations. Play the sequence, jump to a date, or compare two visits side by side.</p>
+  <p class="oq-section-label">Meet OrbitalQ · Explore real NASA SPHEREx data</p>
+  <h1>The sky has a story.<br><em>Watch it unfold.</em></h1>
+  <p>Turn infrared observations into a journey through time. Explore a star field, compare different visits, and follow your curiosity back to the evidence.</p>
+  <p class="oq-home-note">Start with ready-to-view observations. No account needed.</p>
 </div>
 """, unsafe_allow_html=True)
             primary, secondary = st.columns([1.15, 1])
-            primary.button(
-                "Launch the explorer →", type="primary", on_click=launch_explorer, width="stretch",
-            )
-            secondary.markdown(
-                '<a class="oq-how-link" href="#oq-home-details-title">How to use it ↓</a>',
-                unsafe_allow_html=True,
-            )
+            primary.button("Explore the sky →", type="primary", on_click=launch_explorer, width="stretch")
+            secondary.markdown('<a class="oq-how-link" href="#oq-home-details-title">See how it works ↓</a>', unsafe_allow_html=True)
         with observation:
             render_hero_observation()
+            st.caption("Your starting point: the field around Barnard’s Star, observed by SPHEREx.")
     st.markdown("""
-<section class="oq-home-context">
-  <h2>Why revisit the same patch of sky?</h2>
-  <p>A source can change position or brightness between observations. OrbitalQ puts dated infrared exposures together so you can look for changes and trace each frame back to its source.</p>
+<div class="oq-home-strip" aria-label="Project highlights">
+  <span>Real infrared observations</span><span>Dated visits</span><span>Original FITS source links</span><span>Built for NASA Space Apps 2026</span>
+</div>
+<section class="oq-home-section">
+  <p class="oq-section-label">What is OrbitalQ?</p>
+  <h2>A closer look at a sky that keeps changing.</h2>
+  <p>OrbitalQ is an interactive explorer for NASA SPHEREx observations. It brings images, dates, and source information into one place, making it easier for curious people, students, and educators to inspect the infrared sky.</p>
+  <div class="oq-home-features">
+    <article class="oq-home-feature"><span class="oq-section-label">Explore time</span><h3>Return to the same field</h3><p>Play dated observations or select individual visits. Look at the target and its surroundings to investigate apparent changes.</p></article>
+    <article class="oq-home-feature"><span class="oq-section-label">Compare the details</span><h3>Take a second look</h3><p>Drag the Swipe divider, zoom in, or use the crosshair. Compare two views at your own pace.</p></article>
+    <article class="oq-home-feature"><span class="oq-section-label">Follow the evidence</span><h3>See where it came from</h3><p>Open the original FITS exposure and inspect dates, detectors, and quality information. Every interpretation starts with the data.</p></article>
+  </div>
 </section>
-<section class="oq-home-details" aria-labelledby="oq-home-details-title">
-  <h2 id="oq-home-details-title">Your first observation</h2>
-  <p>Start with Barnard’s Star. It is the field shown above.</p>
-  <ol class="oq-about-grid">
-    <li><span class="oq-section-label">Choose a target</span><h3>Open the explorer</h3><p>Choose Barnard’s Star for a bright reference field, or WISE 0855 for a fainter target.</p></li>
-    <li><span class="oq-section-label">Follow the dates</span><h3>Play or jump to a visit</h3><p>Use the timeline to compare the dates, then try Swipe to inspect a pair of visits.</p></li>
-    <li><span class="oq-section-label">Check the image</span><h3>Look at nearby stars</h3><p>Use them as reference points. Open the FITS link to trace the image back to its exposure.</p></li>
+<section class="oq-home-section" aria-labelledby="oq-home-details-title">
+  <p class="oq-section-label">Your first exploration</p>
+  <h2 id="oq-home-details-title">From curious to exploring.<br>Three simple steps.</h2>
+  <p>Start with Barnard’s Star, one of the ready-to-view fields. You can explore the examples before working with coordinates or uploading files.</p>
+  <ol class="oq-home-features">
+    <li class="oq-home-feature"><span class="oq-home-number">01</span><h3>Choose a field</h3><p>Select “Explore the sky”, then choose an available target in “Compare visits”. Each field shows the observations ready to open.</p></li>
+    <li class="oq-home-feature"><span class="oq-home-number">02</span><h3>Follow the timeline</h3><p>Press Play, pause on a visit, or select a date. Switch to Swipe to compare two observations directly.</p></li>
+    <li class="oq-home-feature"><span class="oq-home-number">03</span><h3>Investigate what you see</h3><p>Check surrounding stars and open the FITS source. Differences can come from motion, brightness, wavelength, or the way an image was observed.</p></li>
   </ol>
 </section>
 """, unsafe_allow_html=True)
-    with st.expander("When should I use the other modes?"):
-        st.markdown(
-            "**Spectral preview** lets you change wavelengths in the built-in DR1 field. "
-            "**FITS workspace** lets you browse the archive or upload Level 2 observations "
-            "for a sky position of your choice."
-        )
+    with st.expander("Do I need astronomy experience?"):
+        st.write("No. Begin with the packaged fields and the visual controls. Observation details are available when you want to go deeper.")
+    with st.expander("What can I explore beyond the examples?"):
+        st.write("Spectral preview explores infrared wavelength channels in the built-in field. FITS workspace lets you load and compare official exposures. Search NASA archive queries a sky position; results depend on archive availability.")
+    with st.expander("Does a visible difference mean a discovery?"):
+        st.write("A difference is a starting point for investigation. Measuring motion or brightness requires checks for image alignment, wavelength, quality, and uncertainty. Spectral channels represent wavelengths, not dates.")
+    with st.container(key="oq-home-cta"):
+        copy, action = st.columns([2, 1], vertical_alignment="center")
+        with copy:
+            st.subheader("Your next question starts with a closer look.")
+            st.write("Open the explorer and follow the first sequence.")
+        action.button("Start exploring →", key="home-bottom-start", type="primary",
+                      on_click=launch_explorer, width="stretch")
 
 
 def render_team():
     st.markdown("""
-<section class="oq-about-intro">
-  <h1>Meet the team</h1>
-  <p>We built OrbitalQ for Planet X and SPHEREx at the 2026 NASA Space Apps Challenge. Explore our portfolios and get in touch about the project.</p>
+<style>
+.oq-team-hero { position:relative; overflow:hidden; padding:clamp(1.6rem,5vw,3.5rem);
+    border:1px solid #514063; border-radius:24px; margin:.5rem 0 1.5rem;
+    background:radial-gradient(ellipse at 100% 0%,#51336788,transparent 60%),#191321; }
+.oq-team-hero:after { content:""; position:absolute; width:260px; height:260px;
+    border:1px solid #dac2ff22; border-radius:50%; right:-80px; top:-110px; pointer-events:none; }
+.oq-team-hero h1 { font-size:clamp(2.2rem,5vw,4rem); line-height:1.08;
+    letter-spacing:-.045em; color:#f6f0ff; padding:.6rem 0 .9rem; max-width:16ch; }
+.oq-team-hero h1 span { color:#ffc785; }
+.oq-team-hero p:last-child { color:#c9bfd9; max-width:62ch; line-height:1.7; margin:0; }
+.oq-team-members { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.25rem; }
+.oq-team-card { padding:clamp(1.25rem,3vw,2rem); border:1px solid #493953; border-radius:20px;
+    background:linear-gradient(145deg,#241b30,#15111f); min-width:0; display:flex; flex-direction:column; }
+.oq-team-card-heading { display:flex; align-items:center; gap:1rem; margin-bottom:1.4rem; }
+.oq-team-monogram { display:grid; place-items:center; flex:0 0 64px; height:64px; border-radius:20px;
+    background:linear-gradient(135deg,#dac2ff,#a582ca); color:#241431;
+    font-size:1.35rem; font-weight:800; box-shadow:0 8px 24px #05020c33; }
+.oq-team-card-jay .oq-team-monogram { background:linear-gradient(135deg,#ffdbad,#c79575); }
+.oq-team-card h2 { color:#f6f0ff; font-size:clamp(1.3rem,2.5vw,1.8rem); padding:0; letter-spacing:-.025em; }
+.oq-team-card .oq-team-label { margin:.25rem 0 0; color:#bfb1d0; font-size:.85rem; }
+.oq-team-card > p { color:#c9bfd9; line-height:1.65; margin:0 0 1.5rem; }
+.oq-team-links { display:flex; flex-wrap:wrap; gap:.65rem; margin-top:auto; }
+.oq-team-links a { display:inline-flex; align-items:center; justify-content:space-between; gap:.8rem;
+    min-height:44px; padding:.65rem 1rem; border:1px solid #6f587e; border-radius:12px;
+    color:#efe0ff !important; background:#332440; font-size:.9rem; font-weight:600; text-decoration:none; }
+.oq-team-links a:hover { background:#473056; border-color:#dac2ff; }
+.oq-team-links a:focus-visible { outline:3px solid #ffc785; outline-offset:4px; }
+.oq-team-note { display:flex; flex-wrap:wrap; justify-content:space-between; gap:.5rem 1rem;
+    margin:1.5rem 0 1rem; padding:1.2rem 0; border-top:1px solid #493953; color:#bfb1d0; font-size:.9rem; }
+@media(max-width:760px) { .oq-team-members { grid-template-columns:1fr; } }
+@media(max-width:420px) { .oq-team-links { flex-direction:column; } .oq-team-monogram { flex-basis:50px; height:50px; border-radius:15px; } }
+</style>
+<section class="oq-team-hero">
+  <p class="oq-section-label">The people behind OrbitalQ</p>
+  <h1>Curiosity brought<br>us <span>together.</span></h1>
+  <p>We built OrbitalQ for Planet X and SPHEREx at the 2026 NASA Space Apps Challenge. Meet the team and explore the work behind the names.</p>
 </section>
-""", unsafe_allow_html=True)
-    st.markdown("""
-<div class="oq-about-grid oq-about-pair">
-  <a href="https://aspiraqualquer.vercel.app/"><strong>Beatriz Karoline</strong><span>Aspira Qualquer · Portfolio ↗</span></a>
-  <a href="https://jhay.goskip.app/"><strong>Jay</strong><span>Visit portfolio ↗</span></a>
+<div class="oq-team-members">
+  <article class="oq-team-card" aria-labelledby="oq-team-aspira">
+    <div class="oq-team-card-heading">
+      <div class="oq-team-monogram" aria-hidden="true">AQ</div>
+      <div><h2 id="oq-team-aspira">Aspira Qualquer</h2><p class="oq-team-label">OrbitalQ team</p></div>
+    </div>
+    <p>Explore my personal projects and game development portfolio.</p>
+    <div class="oq-team-links">
+      <a href="https://soubeatrizkaroline.vercel.app/">Personal portfolio <span aria-hidden="true">↗</span></a>
+      <a href="https://aspiraqualquer.vercel.app/">Game portfolio <span aria-hidden="true">↗</span></a>
+    </div>
+  </article>
+  <article class="oq-team-card oq-team-card-jay" aria-labelledby="oq-team-jay">
+    <div class="oq-team-card-heading">
+      <div class="oq-team-monogram" aria-hidden="true">J</div>
+      <div><h2 id="oq-team-jay">Jay</h2><p class="oq-team-label">OrbitalQ team</p></div>
+    </div>
+    <p>Discover the projects and work behind my contribution to OrbitalQ.</p>
+    <div class="oq-team-links">
+      <a href="https://jhay.goskip.app/">Jay’s portfolio <span aria-hidden="true">↗</span></a>
+    </div>
+  </article>
+</div>
+<div class="oq-team-note">
+  <span>Built together for a changing sky.</span>
+  <span>NASA Space Apps Challenge 2026</span>
 </div>
 """, unsafe_allow_html=True)
-    st.link_button("View the GitHub repository ↗", REPO)
+    st.link_button("Explore OrbitalQ on GitHub ↗", REPO)
 
 
 def render_solution_navigation():
     st.markdown("""
 <div class="oq-workspace-heading">
-  <h1>Explore SPHEREx observations</h1>
+  <p class="oq-section-label">Observation workspace · NASA / IPAC IRSA</p>
+  <h1>Explore the changing sky.</h1>
   <p>Compare visits over time, explore infrared wavelengths, or open your own files.</p>
 </div>
 """, unsafe_allow_html=True)
-    return st.radio(
+    return st.segmented_control(
         "Explorer mode", list(EXPLORER_VIEWS),
-        format_func=EXPLORER_VIEWS.__getitem__, horizontal=True,
+        format_func=EXPLORER_VIEWS.__getitem__, default="Ready-to-view examples",
         label_visibility="collapsed", key="explorer_view",
-    )
+    ) or "Ready-to-view examples"
 
 
 site_page = render_site_navigation()
@@ -558,9 +649,11 @@ def read_packaged_observations():
     html = (root / "dist" / "index.html").read_text(encoding="utf-8")
     start = '<script id="case-data" type="application/json">'
     _, found, block = html.partition(start)
-    if not found:
-        return []
-    return json.loads(block.split("</script>", 1)[0])
+    cases = json.loads(block.split("</script>", 1)[0]) if found else []
+    extra_path = root / "data" / "packaged_sequences.json"
+    if extra_path.exists():
+        cases.extend(json.loads(extra_path.read_text(encoding="utf-8")))
+    return list({case["key"]: case for case in cases}.values())
 
 
 def display_time_lapse(frames):
@@ -569,7 +662,7 @@ def display_time_lapse(frames):
     payload = json.dumps(frames, allow_nan=False).replace("<", "\\u003c")
     components.html(
         Template(template.read_text(encoding="utf-8")).substitute(frames=payload),
-        height=546,
+        height=610,
     )
 
 
@@ -605,18 +698,37 @@ def show_packaged_examples():
         return
 
     with st.container(key="oq-targets", border=True):
-        name = st.radio("Target field", list(cases), horizontal=True)
+        name = st.selectbox("Target field", list(cases), key="packaged_target",
+            format_func=lambda name: f"{name} · {len(cases[name]['frames'])} available visits")
     case = cases[name]
     frames = sorted(case["frames"], key=lambda item: item["mjd"])
     viewport, instrumentation = st.columns([3, 1.15], gap="medium")
     with instrumentation:
         with st.container(key="oq-instrumentation", border=True):
-            st.subheader("Instrumentation")
-            mode = st.radio("View", ["Time-lapse", "Swipe"], horizontal=True)
+            st.subheader("Observation guide")
+            mode = st.segmented_control("Comparison mode", ["Time-lapse", "Swipe"], default="Time-lapse") or "Time-lapse"
             st.caption(f"{case['detector']} · {len(frames)} dated observations")
-            st.write(case["description"])
-            if case.get("snapshot"):
-                st.markdown(f"[Processed cutout provenance ↗]({case['snapshot']})")
+            observing_guides = {
+                "Epsilon Indi B": "Follow the field across four visits. Use surrounding stars as reference points and check the wavelength shown for each observation.",
+                "RW Aurigae": "Compare the region around this young star across three dates. Check the wavelength before interpreting differences in brightness.",
+                "R Draconis": "Explore three visits to the field around this variable star. Compare the target with nearby stars and inspect the original exposure.",
+            }
+            st.write(observing_guides.get(name, case["description"]))
+            st.link_button("NASA/IPAC original FITS ↗", frames[0]["fits"])
+            st.caption("Opens the first visit. Each timeline frame also links to its own exposure.")
+            if case.get("processing_note") or case.get("snapshot"):
+                with st.expander("Data sources and processing credits"):
+                    if case.get("processing_note"):
+                        st.write(case["description"])
+                        st.write(case["processing_note"])
+                    if case.get("snapshot"):
+                        st.markdown(f"[Processed image source — SkyShift]({case['snapshot']})")
+                    st.markdown("[Processing license and credits](https://github.com/SouBeatrizKaroline/NasaSpaceApp_OrbitalQ/blob/main/dist/licenses/skyshift.txt)")
+                    st.dataframe(
+                        [{"date": item["date"], "wavelength_um": item["wavelength"],
+                          "official_fits": item["fits"]} for item in frames],
+                        hide_index=True, use_container_width=True,
+                    )
     with viewport:
         if mode == "Time-lapse":
             display_time_lapse([
@@ -631,6 +743,83 @@ def show_packaged_examples():
             ])
         else:
             display_packaged_swipe(case, frames)
+
+
+
+@st.cache_data(ttl=900, show_spinner=False)
+def search_official_observations(ra, dec, releases):
+    result = search_level2_footprints(
+        SkyCoord(ra=ra * u.deg, dec=dec * u.deg, frame="icrs"),
+        ra, dec, radius_deg=0.01, max_results=24, releases=releases, timeout=30,
+    )
+    if not result.get("ok"):
+        raise RuntimeError("NASA/IPAC is temporarily unavailable. Retry or select a single release. Loaded images are retained.")
+    return result
+
+
+
+def render_official_archive():
+    st.subheader("Search real SPHEREx exposures")
+    st.caption("NASA/IPAC IRSA · Official SIA2 API · DR1 / QR3")
+    st.write("Query a sky position and load original FITS pixels. Each candidate is checked against its celestial WCS.")
+    with st.form("official_archive_search"):
+        left, right = st.columns(2)
+        ra = left.number_input("ICRS RA (degrees)", 0.0, 360.0, 269.452077, format="%.6f")
+        dec = right.number_input("ICRS Dec (degrees)", -90.0, 90.0, 4.693365, format="%.6f")
+        releases = st.multiselect("Releases", ["DR1", "QR3"], default=["DR1", "QR3"])
+        st.caption("Default: Barnard’s Star J2000 reference field. Proper motion is not propagated.")
+        submitted = st.form_submit_button("Search official observations", type="primary")
+    if submitted:
+        st.session_state.pop("official_cutout", None)
+        st.session_state.pop("official_search", None)
+        if not releases:
+            st.warning("Choose at least one release.")
+        else:
+            with st.spinner("Querying NASA/IPAC and checking footprints…"):
+                try:
+                    result = search_official_observations(ra, dec, tuple(releases))
+                    st.session_state["official_search"] = (ra, dec, result)
+                except Exception as exc:
+                    st.error(f"Archive unavailable: {exc}")
+    saved = st.session_state.get("official_search")
+    if not saved:
+        st.info("Submit a position to retrieve official observations.")
+        return
+    search_ra, search_dec, result = saved
+    st.caption(f"Results for RA {search_ra:.6f}°, Dec {search_dec:.6f}°")
+    if not result.get("ok"):
+        st.warning(result.get("message", "Archive unavailable."))
+        return
+    st.info(result["message"])
+    matches = list({item["source_url"]: item for item in result.get("matches", [])}.values())
+    matches.sort(key=lambda item: item["mjd_obs"] if np.isfinite(item["mjd_obs"]) else float("inf"))
+    if result.get("rejected"):
+        with st.expander("Query limits and rejected candidates"):
+            for reason in result["rejected"]:
+                st.text(reason)
+    if not matches:
+        st.warning("No verified cutouts in this bounded query. This does not prove absence of observations.")
+        return
+    selected = st.selectbox("Verified exposure", range(len(matches)),
+        format_func=lambda i: f"{matches[i]['date_obs'] or 'Date unavailable'} · {matches[i]['release']} · {matches[i]['filename']}")
+    item = matches[selected]
+    st.link_button("Original NASA/IPAC FITS ↗", item["source_url"])
+    st.caption("Up to 24 candidates checked; this is not a complete archive census.")
+    if st.button("Load this official image", type="primary"):
+        st.session_state.pop("official_cutout", None)
+        with st.spinner("Reading original FITS pixels…"):
+            try:
+                frame = cached_remote_level2(LEVEL2_CACHE_VERSION, item["source_url"], search_ra, search_dec, 71)
+                st.session_state["official_cutout"] = (item["source_url"], frame)
+            except Exception as exc:
+                st.error(f"Could not load exposure: {exc}")
+    loaded = st.session_state.get("official_cutout")
+    if loaded and loaded[0] == item["source_url"]:
+        frame = loaded[1]
+        display_array(frame.image, frame.date_obs or "Official exposure", percentiles=(2.0, 98.0), unit=frame.bunit)
+        st.caption(f"NASA/IPAC IRSA · OBSID: {frame.obsid} · Detector: {frame.detector} · Date: {frame.date_obs} · Units: {frame.bunit}")
+        st.caption("Original FITS pixels; 2–98 percentile display stretch. No generated imagery.")
+        st.info("Coverage is not target detection. Measurements require epoch, wavelength, quality, and calibration checks.")
 
 
 def display_packaged_swipe(case, frames):
@@ -781,7 +970,30 @@ def render_spectral_preview():
         )
     render_wise_field_resources()
 
+def open_prepared_field(name):
+    st.session_state["packaged_target"] = name
+    st.session_state["explorer_view"] = "Ready-to-view examples"
+
+
 def render_fits_workspace():
+    with st.expander("Explore other ready-to-view fields", expanded=True):
+        try:
+            available = {case["name"]: case for case in read_packaged_observations()
+                         if len(case.get("frames", [])) >= 2}
+        except (OSError, ValueError):
+            available = {}
+        if available:
+            chosen = st.selectbox(
+                "Prepared observation sequence", list(available), key="fits_example_choice",
+                format_func=lambda name: f"{name} · {len(available[name]['frames'])} visits",
+            )
+            dates = sorted(frame["date"] for frame in available[chosen]["frames"])
+            st.caption(f"{dates[0][:10]} → {dates[-1][:10]}. Opens this field in Compare visits.")
+            st.button("Open this sequence →", on_click=open_prepared_field, args=(chosen,),
+                      type="primary", key="open_prepared_from_fits")
+        else:
+            st.caption("No prepared sequences are available.")
+
     with st.container(border=True):
         demo_copy, demo_action = st.columns([2, 1])
         with demo_copy:
@@ -836,13 +1048,56 @@ def render_fits_workspace():
 
             st.caption("You can also upload FITS files downloaded directly from the archive.")
 
+
+    with st.expander("Find more official visits for this field"):
+        st.caption("Search DR1 and QR3. Only successfully loaded exposures are added; existing images are retained.")
+        if st.button("Find and add available exposures"):
+            with st.spinner("Querying NASA/IPAC and verifying cutouts…"):
+                try:
+                    result = search_official_observations(float(ra), float(dec), ("DR1", "QR3"))
+                    existing = list(st.session_state.get("remote_frames", []))
+                    urls = {frame.source_url for frame in existing}
+                    identities = {(frame.obsid, frame.detector, frame.processing_version)
+                                  for frame in existing if frame.obsid}
+                    candidates = {item["source_url"]: item for item in result.get("matches", [])
+                                  if item["source_url"] not in urls}
+                    ordered = sorted(candidates.values(),
+                        key=lambda item: item["mjd_obs"] if np.isfinite(item["mjd_obs"]) else float("inf"))
+                    indices = np.linspace(0, len(ordered)-1, min(8,len(ordered)), dtype=int) if ordered else []
+                    added, failures = [], []
+                    for index in indices:
+                        item = ordered[int(index)]
+                        try:
+                            frame = cached_remote_level2(LEVEL2_CACHE_VERSION, item["source_url"], float(ra), float(dec), int(cutout_size))
+                            identity = (frame.obsid, frame.detector, frame.processing_version)
+                            if frame.obsid and identity in identities:
+                                continue
+                            if not np.isfinite(frame.image).any():
+                                continue
+                            added.append(frame)
+                            identities.add(identity)
+                        except Exception as exc:
+                            failures.append(f"{item['filename']}: {exc}")
+                    st.session_state["remote_frames"] = existing + added
+                    if added:
+                        st.success(f"Added {len(added)} verified exposure(s) to the comparison below.")
+                    else:
+                        st.info("No additional images could be loaded in this query.")
+                    st.caption("Bounded search: up to 24 candidates checked and eight new cutouts loaded. Distinct dates are not guaranteed.")
+                    if failures or result.get("rejected"):
+                        with st.expander("Query details"):
+                            for message in result.get("rejected", []) + failures:
+                                st.text(message)
+                except Exception as exc:
+                    st.warning(str(exc))
+
     workspace = st.container()
     st.subheader("Add your own observations")
     st.caption("Use Level 2 FITS files that cover the coordinates in Target coordinates.")
     with st.expander("Browse the public SPHEREx archive"):
         st.caption(
-            "The public S3 directory listing is used instead of the unavailable "
-            "coordinate-search service. Browse a bounded folder sample, then load "
+            "The public S3 listing is an alternative to coordinate search. "
+            "Browse a bounded folder sample, then load "
             "selected FITS files; only their own WCS can confirm target coverage."
         )
         release_name = st.selectbox(
@@ -1182,7 +1437,7 @@ def render_fits_workspace():
                         sequence = [by_time[mjd] for mjd in sorted(by_time)]
                         if len(sequence) > 1:
                             modes.append("Time-lapse")
-                        mode = st.radio("Comparison view", modes, horizontal=True)
+                        mode = st.segmented_control("Comparison view", modes, default=modes[0]) or modes[0]
                         if "Swipe" not in modes:
                             st.caption("Swipe requires matching image dimensions and units, with valid pixels in both visits.")
                         if mode != "Time-lapse":
@@ -1295,6 +1550,8 @@ elif view == "About":
     render_about()
 elif view == "Ready-to-view examples":
     show_packaged_examples()
+elif view == "Official archive":
+    render_official_archive()
 else:
     with science_workspace:
         if view == "Real DR1 sky preview":
