@@ -25,16 +25,14 @@ from core.coordinates import is_inside_image, pixel_scale_arcsec, world_to_pixel
 from core.fits_reader import read_level2
 from core.provenance import report_text
 from core.validation import chronological, comparison_warning
-from ui.about import open_view, render_about, render_wise_field_resources
-from ui.presentation import FAVICON_PATH, display_swipe, render_header
+from ui.about import REPO, render_about, render_documentation, render_wise_field_resources
+from ui.presentation import FAVICON_PATH, display_swipe, render_brand, render_hero_observation
 
 st.set_page_config(
     page_title="OrbitalQ | SPHEREx Explorer",
     page_icon=str(FAVICON_PATH),
     layout="wide",
 )
-
-render_header()
 
 CUBE_URL = (
     "https://nasa-irsa-spherex.s3.us-east-1.amazonaws.com/"
@@ -92,150 +90,283 @@ def cached_s3_files(prefix: str, max_results: int):
     return list_spherex_level2_files(prefix, max_results=max_results, timeout=8)
 
 
-with st.sidebar:
-    st.header("Target coordinates")
-    known_presets = [name for name, values in TARGET_PRESETS.items() if values.get("ra_deg") is not None]
-    preset_options = [DEFAULT_TARGET] + [name for name in known_presets if name != DEFAULT_TARGET] + ["Custom"]
-    preset = st.selectbox(
-        "Target preset",
-        preset_options,
-        key="target_preset",
-        on_change=clear_resolved_target,
-        help="Choose a reference sky field, or select Custom to enter coordinates manually.",
-    )
-    preset_values = TARGET_PRESETS.get(preset, {})
-    target_name = preset
-    if preset == "Custom":
-        target_name = st.text_input("Target name", value="Custom target")
-    object_name = st.text_input(
-        "Resolve object name (optional)",
-        key="object_name_input",
-        help="Uses Astropy's configured name resolver. If it cannot resolve the name, enter ICRS coordinates manually.",
-    )
-    if st.button("Resolve name"):
-        if not object_name.strip():
-            st.warning("Enter an object name first.")
-        else:
-            with st.spinner("Resolving object name…"):
-                resolved = resolve_object_name(object_name.strip())
-                st.session_state["resolved_object"] = resolved
-                st.session_state["resolved_object_name"] = object_name.strip()
-                if resolved.get("ok"):
-                    st.session_state["ra_input"] = resolved["ra"]
-                    st.session_state["dec_input"] = resolved["dec"]
-    if preset != "Custom" and not object_name.strip():
-        st.session_state.pop("resolved_object", None)
-        st.session_state.pop("resolved_object_name", None)
-    resolved_object = st.session_state.get("resolved_object")
-    resolved_for_name = (
-        resolved_object
-        if st.session_state.get("resolved_object_name") == object_name.strip()
-        else None
-    )
-    if resolved_for_name and resolved_for_name.get("ok"):
-        target_name = object_name.strip()
-        st.success(
-            f"Resolved: RA {resolved_for_name['ra']:.6f}°, "
-            f"Dec {resolved_for_name['dec']:.6f}°"
-        )
-    elif resolved_for_name and not resolved_for_name.get("ok"):
-        st.warning(
-            f"Object name could not be resolved: "
-            f"{resolved_for_name.get('message', 'unknown error')}"
-        )
-    default_ra = float(
-        resolved_for_name["ra"]
-        if resolved_for_name and resolved_for_name.get("ok")
-        else preset_values.get("ra_deg") or 133.795129
-    )
-    default_dec = float(
-        resolved_for_name["dec"]
-        if resolved_for_name and resolved_for_name.get("ok")
-        else preset_values.get("dec_deg")
-        if preset_values.get("dec_deg") is not None
-        else -7.245147
-    )
-    if "ra_input" not in st.session_state:
-        st.session_state["ra_input"] = default_ra
-    if "dec_input" not in st.session_state:
-        st.session_state["dec_input"] = default_dec
-    coordinate_source = (
-        (preset, "resolved", object_name.strip())
-        if resolved_for_name and resolved_for_name.get("ok")
-        else (preset, "preset")
-    )
-    if preset == "Custom" and not (resolved_for_name and resolved_for_name.get("ok")):
-        coordinate_source = ("Custom",)
-    if st.session_state.get("coordinate_source") != coordinate_source:
-        if preset != "Custom" or (resolved_for_name and resolved_for_name.get("ok")):
-            st.session_state["ra_input"] = default_ra
-            st.session_state["dec_input"] = default_dec
-        st.session_state["coordinate_source"] = coordinate_source
-    ra = st.number_input(
-        "Right ascension (degrees)",
-        min_value=0.0,
-        max_value=360.0,
-        format="%.6f",
-        key="ra_input",
-    )
-    dec = st.number_input(
-        "Declination (degrees)",
-        min_value=-90.0,
-        max_value=90.0,
-        format="%.6f",
-        key="dec_input",
-    )
-    cutout_size = st.select_slider("Cutout width (pixels)", options=[21, 31, 41, 51, 71, 101],
-                                   value=51)
-    display_low = st.slider("Display lower percentile", 0.0, 20.0, 2.0, 0.5)
-    display_high = st.slider("Display upper percentile", 80.0, 100.0, 98.0, 0.5)
-    if preset_values and not (resolved_for_name and resolved_for_name.get("ok")):
-        note = preset_values["note"]
-        if preset_values.get("epoch"):
-            note = f"Reference epoch: {preset_values['epoch']}. {note}"
-        st.caption(note)
-        if preset_values.get("source"):
-            st.markdown(f"[Preset coordinate source]({preset_values['source']})")
+SITE_PAGES = {
+    "home": "Home", "solution": "Solution", "team": "Team",
+    "documentation": "Documentation", "about": "About",
+}
+EXPLORER_VIEWS = {
+    "Ready-to-view examples": "Compare visits",
+    "Real DR1 sky preview": "Spectral preview",
+    "Compare Level 2 visits": "FITS workspace",
+}
 
-try:
-    ra = float(ra)
-    dec = float(dec)
-    if not np.isfinite(ra) or not np.isfinite(dec):
-        raise ValueError("RA and Dec must be finite numbers.")
-    target = SkyCoord(ra=ra * u.deg, dec=dec * u.deg, frame="icrs")
-except (TypeError, ValueError) as exc:
-    st.error(f"Invalid target coordinates: {exc}")
-    st.stop()
-display_percentiles = (display_low, display_high)
-target_signature = (round(float(ra), 6), round(float(dec), 6), int(cutout_size))
-demo_coordinates = (
-    abs(float(ra) - DEMO_RA) < 1e-6
-    and abs(float(dec) - DEMO_DEC) < 1e-6
-)
-demo_active = bool(st.session_state.get("demo_sequence_active") and demo_coordinates)
-if not demo_active:
-    st.session_state["demo_sequence_active"] = False
-else:
-    target_name = "Verified SPHEREx DR1 example field"
-    st.sidebar.info(
-        "Example field active: RA 160.6180°, Dec +30.6694°. "
-        "This is not WISE 0855."
+
+def select_site_page():
+    page = st.session_state["site_page"].lower()
+    if page == "home":
+        if "page" in st.query_params:
+            del st.query_params["page"]
+    else:
+        st.query_params["page"] = page
+
+
+def launch_explorer():
+    st.session_state["site_page"] = "Solution"
+    st.session_state["explorer_view"] = "Ready-to-view examples"
+    select_site_page()
+
+
+def render_site_navigation():
+    if "site_page" not in st.session_state:
+        st.session_state["site_page"] = SITE_PAGES.get(st.query_params.get("page"), "Home")
+    with st.container(key="oq-navigation"):
+        brand, navigation = st.columns([1, 1.6], vertical_alignment="center")
+        with brand:
+            render_brand()
+        navigation.radio(
+            "Site navigation", list(SITE_PAGES.values()), horizontal=True,
+            label_visibility="collapsed", key="site_page", on_change=select_site_page,
+        )
+    return st.session_state["site_page"]
+
+
+def render_home():
+    with st.container(key="oq-landing"):
+        intro, observation = st.columns([1.05, 1], vertical_alignment="center", gap="large")
+        with intro:
+            st.markdown("""
+<div class="oq-home-copy">
+  <p class="oq-section-label">NASA Space Apps 2026 / Planet X and SPHEREx</p>
+  <h1>Watch the infrared <em>sky change.</em></h1>
+  <p>Revisit the same field across months of NASA SPHEREx observations. Play the sequence, jump to a date, or compare two visits side by side.</p>
+</div>
+""", unsafe_allow_html=True)
+            primary, secondary = st.columns([1.15, 1])
+            primary.button(
+                "Launch the explorer →", type="primary", on_click=launch_explorer, width="stretch",
+            )
+            secondary.markdown(
+                '<a class="oq-how-link" href="#oq-home-details-title">How to use it ↓</a>',
+                unsafe_allow_html=True,
+            )
+        with observation:
+            render_hero_observation()
+    st.markdown("""
+<section class="oq-home-context">
+  <h2>Why revisit the same patch of sky?</h2>
+  <p>A source can change position or brightness between observations. OrbitalQ puts dated infrared exposures together so you can look for changes and trace each frame back to its source.</p>
+</section>
+<section class="oq-home-details" aria-labelledby="oq-home-details-title">
+  <h2 id="oq-home-details-title">Your first observation</h2>
+  <p>Start with Barnard’s Star. It is the field shown above.</p>
+  <ol class="oq-about-grid">
+    <li><span class="oq-section-label">Choose a target</span><h3>Open the explorer</h3><p>Choose Barnard’s Star for a bright reference field, or WISE 0855 for a fainter target.</p></li>
+    <li><span class="oq-section-label">Follow the dates</span><h3>Play or jump to a visit</h3><p>Use the timeline to compare the dates, then try Swipe to inspect a pair of visits.</p></li>
+    <li><span class="oq-section-label">Check the image</span><h3>Look at nearby stars</h3><p>Use them as reference points. Open the FITS link to trace the image back to its exposure.</p></li>
+  </ol>
+</section>
+""", unsafe_allow_html=True)
+    with st.expander("When should I use the other modes?"):
+        st.markdown(
+            "**Spectral preview** lets you change wavelengths in the built-in DR1 field. "
+            "**FITS workspace** lets you browse the archive or upload Level 2 observations "
+            "for a sky position of your choice."
+        )
+
+
+def render_team():
+    st.markdown("""
+<section class="oq-about-intro">
+  <h1>Meet the team</h1>
+  <p>We built OrbitalQ for Planet X and SPHEREx at the 2026 NASA Space Apps Challenge. Explore our portfolios and get in touch about the project.</p>
+</section>
+""", unsafe_allow_html=True)
+    st.markdown("""
+<div class="oq-about-grid oq-about-pair">
+  <a href="https://aspiraqualquer.vercel.app/"><strong>Beatriz Karoline</strong><span>Aspira Qualquer · Portfolio ↗</span></a>
+  <a href="https://jhay.goskip.app/"><strong>Jay</strong><span>Visit portfolio ↗</span></a>
+</div>
+""", unsafe_allow_html=True)
+    st.link_button("View the GitHub repository ↗", REPO)
+
+
+def render_solution_navigation():
+    st.markdown("""
+<div class="oq-workspace-heading">
+  <h1>Explore SPHEREx observations</h1>
+  <p>Compare visits over time, explore infrared wavelengths, or open your own files.</p>
+</div>
+""", unsafe_allow_html=True)
+    return st.radio(
+        "Explorer mode", list(EXPLORER_VIEWS),
+        format_func=EXPLORER_VIEWS.__getitem__, horizontal=True,
+        label_visibility="collapsed", key="explorer_view",
     )
-if st.session_state.get("level2_state_version") != LEVEL2_CACHE_VERSION:
-    st.session_state.pop("remote_frames", None)
-    st.session_state.pop("remote_errors", None)
-    st.session_state.pop("frame_signature", None)
-    st.session_state["level2_state_version"] = LEVEL2_CACHE_VERSION
-if st.session_state.get("target_signature") != target_signature:
-    st.session_state["target_signature"] = target_signature
-    st.session_state.pop("archive_result", None)
-    st.session_state.pop("demo_sequence_result", None)
-    st.session_state.pop("remote_frames", None)
-    st.session_state.pop("remote_errors", None)
-    st.session_state.pop("frame_signature", None)
-    st.session_state["epoch_selector"] = 0
-    if demo_active:
-        st.session_state["demo_sequence_pending"] = True
+
+
+site_page = render_site_navigation()
+if "explorer_view" in st.session_state:
+    st.session_state["explorer_view"] = st.session_state["explorer_view"]
+view = render_solution_navigation() if site_page == "Solution" else site_page
+
+
+def render_target_controls(instruments):
+    with instruments, st.container(key="oq-advanced-settings", border=True):
+        st.header("Target coordinates")
+        known_presets = [name for name, values in TARGET_PRESETS.items() if values.get("ra_deg") is not None]
+        preset_options = [DEFAULT_TARGET] + [name for name in known_presets if name != DEFAULT_TARGET] + ["Custom"]
+        preset = st.selectbox(
+            "Target preset",
+            preset_options,
+            key="target_preset",
+            on_change=clear_resolved_target,
+            help="Choose a reference sky field, or select Custom to enter coordinates manually.",
+        )
+        preset_values = TARGET_PRESETS.get(preset, {})
+        target_name = preset
+        if preset == "Custom":
+            target_name = st.text_input("Target name", value="Custom target", key="custom_target_name")
+        object_name = st.text_input(
+            "Resolve object name (optional)",
+            key="object_name_input",
+            help="Uses Astropy's configured name resolver. If it cannot resolve the name, enter ICRS coordinates manually.",
+        )
+        if st.button("Resolve name"):
+            if not object_name.strip():
+                st.warning("Enter an object name first.")
+            else:
+                with st.spinner("Resolving object name…"):
+                    resolved = resolve_object_name(object_name.strip())
+                    st.session_state["resolved_object"] = resolved
+                    st.session_state["resolved_object_name"] = object_name.strip()
+                    if resolved.get("ok"):
+                        st.session_state["ra_input"] = resolved["ra"]
+                        st.session_state["dec_input"] = resolved["dec"]
+        if preset != "Custom" and not object_name.strip():
+            st.session_state.pop("resolved_object", None)
+            st.session_state.pop("resolved_object_name", None)
+        resolved_object = st.session_state.get("resolved_object")
+        resolved_for_name = (
+            resolved_object
+            if st.session_state.get("resolved_object_name") == object_name.strip()
+            else None
+        )
+        if resolved_for_name and resolved_for_name.get("ok"):
+            target_name = object_name.strip()
+            st.success(
+                f"Resolved: RA {resolved_for_name['ra']:.6f}°, "
+                f"Dec {resolved_for_name['dec']:.6f}°"
+            )
+        elif resolved_for_name and not resolved_for_name.get("ok"):
+            st.warning(
+                f"Object name could not be resolved: "
+                f"{resolved_for_name.get('message', 'unknown error')}"
+            )
+        default_ra = float(
+            resolved_for_name["ra"]
+            if resolved_for_name and resolved_for_name.get("ok")
+            else preset_values.get("ra_deg") or 133.795129
+        )
+        default_dec = float(
+            resolved_for_name["dec"]
+            if resolved_for_name and resolved_for_name.get("ok")
+            else preset_values.get("dec_deg")
+            if preset_values.get("dec_deg") is not None
+            else -7.245147
+        )
+        if "ra_input" not in st.session_state:
+            st.session_state["ra_input"] = default_ra
+        if "dec_input" not in st.session_state:
+            st.session_state["dec_input"] = default_dec
+        coordinate_source = (
+            (preset, "resolved", object_name.strip())
+            if resolved_for_name and resolved_for_name.get("ok")
+            else (preset, "preset")
+        )
+        if preset == "Custom" and not (resolved_for_name and resolved_for_name.get("ok")):
+            coordinate_source = ("Custom",)
+        if st.session_state.get("coordinate_source") != coordinate_source:
+            if preset != "Custom" or (resolved_for_name and resolved_for_name.get("ok")):
+                st.session_state["ra_input"] = default_ra
+                st.session_state["dec_input"] = default_dec
+            st.session_state["coordinate_source"] = coordinate_source
+        ra = st.number_input(
+            "Right ascension (degrees)",
+            min_value=0.0,
+            max_value=360.0,
+            format="%.6f",
+            key="ra_input",
+        )
+        dec = st.number_input(
+            "Declination (degrees)",
+            min_value=-90.0,
+            max_value=90.0,
+            format="%.6f",
+            key="dec_input",
+        )
+        cutout_size = st.select_slider("Cutout width (pixels)", options=[21, 31, 41, 51, 71, 101],
+                                       value=51, key="cutout_size")
+        display_low = st.slider("Display lower percentile", 0.0, 20.0, 2.0, 0.5, key="display_low")
+        display_high = st.slider("Display upper percentile", 80.0, 100.0, 98.0, 0.5, key="display_high")
+        if preset_values and not (resolved_for_name and resolved_for_name.get("ok")):
+            note = preset_values["note"]
+            if preset_values.get("epoch"):
+                note = f"Reference epoch: {preset_values['epoch']}. {note}"
+            st.caption(note)
+            if preset_values.get("source"):
+                st.markdown(f"[Preset coordinate source]({preset_values['source']})")
+
+    try:
+        ra = float(ra)
+        dec = float(dec)
+        if not np.isfinite(ra) or not np.isfinite(dec):
+            raise ValueError("RA and Dec must be finite numbers.")
+        target = SkyCoord(ra=ra * u.deg, dec=dec * u.deg, frame="icrs")
+    except (TypeError, ValueError) as exc:
+        st.error(f"Invalid target coordinates: {exc}")
+        st.stop()
+    display_percentiles = (display_low, display_high)
+    target_signature = (round(float(ra), 6), round(float(dec), 6), int(cutout_size))
+    demo_coordinates = (
+        abs(float(ra) - DEMO_RA) < 1e-6
+        and abs(float(dec) - DEMO_DEC) < 1e-6
+    )
+    demo_active = bool(st.session_state.get("demo_sequence_active") and demo_coordinates)
+    if not demo_active:
+        st.session_state["demo_sequence_active"] = False
+    else:
+        target_name = "Verified SPHEREx DR1 example field"
+        instruments.info(
+            "Example field active: RA 160.6180°, Dec +30.6694°. "
+            "This is not WISE 0855."
+        )
+    if st.session_state.get("level2_state_version") != LEVEL2_CACHE_VERSION:
+        st.session_state.pop("remote_frames", None)
+        st.session_state.pop("remote_errors", None)
+        st.session_state.pop("frame_signature", None)
+        st.session_state["level2_state_version"] = LEVEL2_CACHE_VERSION
+    if st.session_state.get("target_signature") != target_signature:
+        st.session_state["target_signature"] = target_signature
+        st.session_state.pop("archive_result", None)
+        st.session_state.pop("demo_sequence_result", None)
+        st.session_state.pop("remote_frames", None)
+        st.session_state.pop("remote_errors", None)
+        st.session_state.pop("frame_signature", None)
+        st.session_state["epoch_selector"] = 0
+        if demo_active:
+            st.session_state["demo_sequence_pending"] = True
+    return target_name, ra, dec, target, cutout_size, display_percentiles
+
+
+for widget_key in ("target_preset", "custom_target_name", "object_name_input", "ra_input",
+                   "dec_input", "cutout_size", "display_low", "display_high"):
+    if widget_key in st.session_state:
+        # Keep instrument settings when their widgets are off-screen.
+        st.session_state[widget_key] = st.session_state[widget_key]
+
+if view in ("Real DR1 sky preview", "Compare Level 2 visits"):
+    science_workspace, instruments = st.columns([3, 1.15], gap="medium")
+    target_name, ra, dec, target, cutout_size, display_percentiles = render_target_controls(instruments)
 
 
 @st.cache_resource(show_spinner="Connecting to the public SPHEREx DR1 cube…")
@@ -427,120 +558,14 @@ def read_packaged_observations():
     return json.loads(block.split("</script>", 1)[0])
 
 
-def show_time_lapse(frames):
-    """Play the dated frames at a user-controlled speed in the browser."""
-    payload = json.dumps(
-        [{key: frame[key] for key in ("date", "mjd", "image")} for frame in frames],
-        allow_nan=False,
-    ).replace("<", r"\u003c")
-    markup = """
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
-* { box-sizing: border-box; }
-body { margin: 0; color: #edf5ff; font: 14px system-ui, sans-serif; }
-main { border: 1px solid #344464; border-radius: 14px; background: #0b1323; padding: .65rem; }
-header { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .3rem 1rem; padding: .25rem .2rem .55rem; }
-#date { color: #8eeafa; font-weight: 650; }
-#elapsed { color: #ffca82; }
-#view { width: 100%; height: clamp(210px, 55vmin, 350px); display: block; object-fit: contain; image-rendering: pixelated; background: #050913; border-radius: 8px; }
-.controls { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; margin-top: .55rem; }
-button, select { font: inherit; color: #edf5ff; background: #14263d; border: 1px solid #547395; border-radius: 7px; padding: .3rem .55rem; }
-button { cursor: pointer; }
-button:disabled { opacity: .55; cursor: default; }
-:focus-visible { outline: 2px solid #76e8f6; outline-offset: 2px; }
-#play { background: #183a49; }
-#seek { width: 100%; accent-color: #76e8f6; margin: .55rem 0 .15rem; }
-footer { display: flex; justify-content: space-between; gap: .5rem; padding: 0 .2rem; font-size: .8rem; color: #b8c6dc; }
-</style>
-</head>
-<body>
-<main aria-label="SPHEREx observation time lapse">
-  <header><span id="date"></span><span id="elapsed"></span></header>
-  <img id="view" alt="SPHEREx observation cutout">
-  <div class="controls">
-    <button type="button" id="previous" aria-label="Previous observation">←</button>
-    <button type="button" id="play">Play time lapse</button>
-    <button type="button" id="next" aria-label="Next observation">→</button>
-    <label for="speed">Speed</label>
-    <select id="speed">
-      <option value="2000">0.5×</option><option value="1000" selected>1×</option><option value="500">2×</option>
-    </select>
-  </div>
-  <input id="seek" type="range" min="0" value="0" aria-label="Jump to observation">
-  <footer><span id="step"></span><span>Actual elapsed time shown above</span></footer>
-</main>
-<script id="frames" type="application/json">$payload</script>
-<script>
-const get = (id) => document.getElementById(id);
-const frames = JSON.parse(get("frames").textContent);
-const last = frames.length - 1;
-const seek = get("seek");
-const play = get("play");
-const speed = get("speed");
-let index = 0;
-let timer = null;
-seek.max = last;
-
-function elapsed(days) {
-    if (days >= 1) return days.toFixed(2) + " days";
-    if (days >= 1 / 24) return (days * 24).toFixed(2) + " hours";
-    if (days >= 1 / 1440) return (days * 1440).toFixed(1) + " min";
-    return (days * 86400).toFixed(1) + " sec";
-}
-function show() {
-    const frame = frames[index];
-    get("view").src = frame.image;
-    get("date").textContent = frame.date;
-    get("elapsed").textContent = index === 0 ? "First visit" : "+" + elapsed(frame.mjd - frames[0].mjd) + " since first visit";
-    get("step").textContent = "Visit " + (index + 1) + " / " + frames.length;
-    seek.value = index;
-    seek.setAttribute("aria-valuetext", frame.date + ", visit " + (index + 1));
-    get("previous").disabled = index === 0;
-    get("next").disabled = index === last;
-}
-function pause() {
-    if (timer !== null) window.clearInterval(timer);
-    timer = null;
-    play.textContent = "Play time lapse";
-}
-function start() {
-    play.textContent = "Pause";
-    timer = window.setInterval(() => {
-        index += 1;
-        show();
-        if (index === last) pause();
-    }, Number(speed.value));
-}
-function jump(next) {
-    pause();
-    index = Math.max(0, Math.min(last, next));
-    show();
-}
-play.addEventListener("click", () => {
-    if (timer !== null) { pause(); return; }
-    if (index === last) jump(0);
-    start();
-});
-get("previous").addEventListener("click", () => jump(index - 1));
-get("next").addEventListener("click", () => jump(index + 1));
-seek.addEventListener("input", () => jump(Number(seek.value)));
-speed.addEventListener("change", () => {
-    if (timer !== null) { pause(); start(); }
-});
-document.addEventListener("visibilitychange", () => {
-    if (document.hidden) pause();
-});
-show();
-</script>
-</body>
-</html>
-"""
-    components.html(Template(markup).substitute(payload=payload), height=505)
-    st.caption("Playback gives each visit the same screen time. Use the timestamps to judge the actual gaps.")
+def display_time_lapse(frames):
+    """Render a browser-side timeline of dated sky cutouts."""
+    template = Path(__file__).resolve().parent / "ui" / "timeline.html"
+    payload = json.dumps(frames, allow_nan=False).replace("<", "\\u003c")
+    components.html(
+        Template(template.read_text(encoding="utf-8")).substitute(frames=payload),
+        height=546,
+    )
 
 
 def build_time_lapse_frames(observations):
@@ -556,17 +581,14 @@ def build_time_lapse_frames(observations):
         result.append({
             "date": frame.date_obs or f"MJD {frame.mjd_obs:.5f}",
             "mjd": float(frame.mjd_obs),
+            "wavelength": frame.wavelength,
+            "source": frame.source_url if frame.source_url.startswith("https://") else "",
             "image": "data:image/png;base64," + b64encode(buffer.getvalue()).decode("ascii"),
         })
     return result
 
 
 def show_packaged_examples():
-    st.subheader("Compare real observations across months")
-    st.caption(
-        "These SPHEREx cutouts are already included with OrbitalQ. "
-        "Play the dated sequence or select two visits for closer inspection."
-    )
     try:
         cases = {case["name"]: case for case in read_packaged_observations()
                  if len(case.get("frames", [])) >= 2}
@@ -574,24 +596,39 @@ def show_packaged_examples():
         st.error(f"Could not open the packaged SPHEREx observations: {exc}")
         return
     if not cases:
-        st.info("No packaged examples are available. Load FITS files in Compare Level 2 visits.")
+        st.info("No packaged examples are available. Open the FITS workspace to load observations.")
         return
 
-    name = st.selectbox("Example target", list(cases))
+    with st.container(key="oq-targets", border=True):
+        name = st.radio("Target field", list(cases), horizontal=True)
     case = cases[name]
     frames = sorted(case["frames"], key=lambda item: item["mjd"])
-    if st.radio("Example view", ["Time lapse", "Swipe / Auto-Blink"], horizontal=True) == "Time lapse":
-        show_observation_interval(
-            frames[0]["date"], frames[0]["mjd"], frames[-1]["date"], frames[-1]["mjd"],
-        )
-        show_time_lapse(frames)
-        with st.expander("Sources for each visit"):
-            for frame in frames:
-                st.link_button(frame["date"], frame["fits"])
+    viewport, instrumentation = st.columns([3, 1.15], gap="medium")
+    with instrumentation:
+        with st.container(key="oq-instrumentation", border=True):
+            st.subheader("Instrumentation")
+            mode = st.radio("View", ["Time-lapse", "Swipe"], horizontal=True)
+            st.caption(f"{case['detector']} · {len(frames)} dated observations")
+            st.write(case["description"])
             if case.get("snapshot"):
-                st.markdown(f"[Processed cutout provenance]({case['snapshot']})")
-        return
+                st.markdown(f"[Processed cutout provenance ↗]({case['snapshot']})")
+    with viewport:
+        if mode == "Time-lapse":
+            display_time_lapse([
+                {
+                    "date": frame["date"],
+                    "mjd": frame["mjd"],
+                    "image": frame["image"],
+                    "wavelength": f"{frame['wavelength']:.3f} µm",
+                    "source": frame["fits"],
+                }
+                for frame in frames
+            ])
+        else:
+            display_packaged_swipe(case, frames)
 
+
+def display_packaged_swipe(case, frames):
     first_slot, second_slot = st.columns(2)
     first_index = first_slot.selectbox(
         "First visit", range(len(frames) - 1), format_func=lambda i: frames[i]["date"],
@@ -628,108 +665,13 @@ def show_packaged_examples():
     left, right = st.columns(2)
     left.link_button("Earlier FITS source", first["fits"])
     right.link_button("Later FITS source", second["fits"])
-    if case.get("snapshot"):
-        st.markdown(f"[Processed cutout provenance]({case['snapshot']})")
 
 
-def open_packaged_examples():
-    st.session_state["explorer_view"] = "Ready-to-view examples"
-
-
-view = st.radio(
-    "Explorer view",
-    [
-        "Home", "Solution", "Real DR1 sky preview", "Compare Level 2 visits",
-        "Ready-to-view examples", "About OrbitalQ", "Contact",
-    ],
-    horizontal=True,
-    key="explorer_view",
-)
-
-if view == "Home":
-    st.subheader("Your first look at the infrared sky")
-    st.write(
-        "OrbitalQ makes real observations from NASA’s SPHEREx mission easier to explore. "
-        "Start by comparing two pictures of the same sky field, or use a spectral "
-        "cutout to see how the field looks at different wavelengths."
-    )
-    examples_column, spectral_column = st.columns(2)
-    with examples_column:
-        with st.container(border=True):
-            st.markdown("### See how a field changes over time")
-            st.write(
-                "Choose Barnard’s Star or WISE 0855 and compare dated observations "
-                "with a time lapse or draggable divider. The examples are ready to open."
-            )
-            st.button(
-                "Open real examples", type="primary", on_click=open_view,
-                args=("Ready-to-view examples",), use_container_width=True,
-            )
-    with spectral_column:
-        with st.container(border=True):
-            st.markdown("### Explore infrared wavelengths")
-            st.write(
-                "Move through the spectral channels of the SPHEREx DR1 All-Sky Cube "
-                "and look at how the same field appears at different wavelengths."
-            )
-            st.button(
-                "Open the DR1 sky preview", on_click=open_view,
-                args=("Real DR1 sky preview",), use_container_width=True,
-            )
-    st.caption("Built for Planet X and SPHEREx at the 2026 NASA Space Apps Challenge.")
-
-elif view == "Solution":
-    st.subheader("From archive images to a comparison you can explore")
-    st.write(
-        "Spotting changes across observations takes more than finding two images. "
-        "You need to know when they were taken and whether they cover the same region. "
-        "OrbitalQ brings that information into one workspace."
-    )
-    with st.container(border=True):
-        st.markdown("### Find your field")
-        st.write(
-            "Choose a target preset or enter sky coordinates. In the Level 2 workspace, "
-            "browse public files, paste a public FITS link, or upload observations you "
-            "already have. The app reads each file’s sky coordinates to check coverage."
-        )
-        st.markdown("### Compare two visits")
-        st.write(
-            "Choose exposures by date, check the time between them, and use Swipe, "
-            "Blink, or the side-by-side view when available."
-        )
-        st.markdown("### Follow the evidence")
-        st.write(
-            "Review observation dates, detector information, quality flags, and file "
-            "sources. Export an observation list and a provenance report to keep a record."
-        )
-    st.button(
-        "Open the Level 2 workspace", type="primary", on_click=open_view,
-        args=("Compare Level 2 visits",),
-    )
-
-elif view == "Contact":
-    st.subheader("Contact the OrbitalQ team")
-    st.write("Find the team behind the project and our public work.")
-    aspira, jay = st.columns(2)
-    for column, name, url in (
-        (aspira, "Aspira Qualquer", "https://aspiraqualquer.vercel.app/"),
-        (jay, "Jay", "https://jhay.goskip.app/"),
-    ):
-        with column:
-            with st.container(border=True):
-                st.markdown(f"### {name}")
-                st.link_button(f"Visit {name}’s portfolio", url, use_container_width=True)
-    st.markdown(
-        "[View the public project repository]"
-        "(https://github.com/SouBeatrizKaroline/NasaSpaceApp_OrbitalQ)"
-    )
-
-elif view == "Real DR1 sky preview":
+def render_spectral_preview():
     st.subheader("SPHEREx DR1 All-Sky Cube")
-    render_wise_field_resources()
     st.info(
-        "This is a real SPHEREx DR1 product. Its 102 planes are wavelength channels, "
-        "Use Compare Level 2 visits to explore separate observations by date."
+        "The 102 planes of the DR1 cube represent infrared wavelengths. "
+        "Open Compare visits or the FITS workspace to compare exposures by date."
     )
     channel_labels, channel_error = cube_channel_labels()
     if channel_error:
@@ -751,7 +693,7 @@ elif view == "Real DR1 sky preview":
         if not is_inside_image(x, y, image_hdu.header["NAXIS1"], image_hdu.header["NAXIS2"]):
             st.warning(
                 "The current built-in tile does not contain these coordinates. "
-                "Choose WISE 0855−0714 for the built-in preview, or use Compare Level 2 visits with files covering your target."
+                "Choose WISE 0855−0714 for the built-in preview, or open the FITS workspace with files covering your target."
             )
         elif plane + 1 in (51, 52):
             st.warning("This is a documented blank channel adjacent to the dichroic split.")
@@ -832,12 +774,9 @@ elif view == "Real DR1 sky preview":
             "The app reads a small cutout from the remote FITS cube; it is not intended "
             "to download the entire 306 MB tile."
         )
+    render_wise_field_resources()
 
-elif view == "Ready-to-view examples":
-    show_packaged_examples()
-
-elif view == "Compare Level 2 visits":
-    st.button("See Barnard’s Star and WISE 0855 across months", on_click=open_packaged_examples)
+def render_fits_workspace():
     with st.container(border=True):
         demo_copy, demo_action = st.columns([2, 1])
         with demo_copy:
@@ -894,7 +833,7 @@ elif view == "Compare Level 2 visits":
 
     workspace = st.container()
     st.subheader("Add your own observations")
-    st.caption("Use Level 2 FITS files that cover the coordinates in the sidebar.")
+    st.caption("Use Level 2 FITS files that cover the coordinates in Target coordinates.")
     with st.expander("Browse the public SPHEREx archive"):
         st.caption(
             "The public S3 directory listing is used instead of the unavailable "
@@ -1237,22 +1176,20 @@ elif view == "Compare Level 2 visits":
                         by_time = {visit.mjd_obs: visit for visit in sequence}
                         sequence = [by_time[mjd] for mjd in sorted(by_time)]
                         if len(sequence) > 1:
-                            modes.append("Time lapse")
+                            modes.append("Time-lapse")
                         mode = st.radio("Comparison view", modes, horizontal=True)
                         if "Swipe" not in modes:
                             st.caption("Swipe requires matching image dimensions and units, with valid pixels in both visits.")
-                        boundary_a, boundary_b = (
-                            (sequence[0], sequence[-1]) if mode == "Time lapse" else (first, second)
-                        )
-                        show_observation_interval(
-                            boundary_a.date_obs, boundary_a.mjd_obs, boundary_b.date_obs, boundary_b.mjd_obs,
-                        )
-                        if mode == "Time lapse":
+                        if mode != "Time-lapse":
+                            show_observation_interval(
+                                first.date_obs, first.mjd_obs, second.date_obs, second.mjd_obs,
+                            )
+                        if mode == "Time-lapse":
                             st.caption(
                                 f"{len(sequence)} visits from the selected detector with shared units "
                                 "and display scale. The cutouts retain their native pixel grids."
                             )
-                            show_time_lapse(build_time_lapse_frames(sequence))
+                            display_time_lapse(build_time_lapse_frames(sequence))
                         elif mode == "Swipe":
                             st.caption("Both cutouts share a color scale and retain their native pixel grids.")
                             display_swipe(first, second, shared_limits)
@@ -1343,5 +1280,27 @@ elif view == "Compare Level 2 visits":
             elif not errors:
                 st.info("Upload Level 2 FITS files to begin.")
 
+if view == "Home":
+    render_home()
+elif view == "Team":
+    render_team()
+elif view == "Documentation":
+    render_documentation()
+elif view == "About":
+    render_about()
+elif view == "Ready-to-view examples":
+    show_packaged_examples()
 else:
-    render_about(activate_demo_sequence)
+    with science_workspace:
+        if view == "Real DR1 sky preview":
+            render_spectral_preview()
+        else:
+            render_fits_workspace()
+
+st.markdown(f"""
+<footer class="oq-footer">
+  <span>OrbitalQ · NASA Space Apps Challenge 2026</span>
+  <a href="{REPO}">GitHub ↗</a>
+  <a href="https://irsa.ipac.caltech.edu/spherex-archive-documentation/spherex-data-access/">SPHEREx data ↗</a>
+</footer>
+""", unsafe_allow_html=True)

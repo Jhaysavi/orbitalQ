@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+    :root { color-scheme: dark; --ink: #f4efff; --muted: #b6aec9; --line: #3b3453; --amber: #ffc785; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); font: 14px/1.45 system-ui, sans-serif; }
+    main { overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: #151221; }
+    .readout, .controls, .timeline-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .35rem .9rem; }
+    .readout { padding: .65rem .9rem; }
+    .readout small, .timeline-header span { display: block; color: var(--muted); font: 600 .69rem/1.5 ui-monospace, monospace; }
+    .readout strong { font-size: .92rem; }
+    #elapsed { color: var(--amber); font: 600 .75rem/1.4 ui-monospace, monospace; }
+    .stage {
+        display: grid; place-items: center; overflow: hidden;
+        height: clamp(208px, 58vw, 318px);
+        border-block: 1px solid var(--line);
+        background: radial-gradient(ellipse, #1a1528 0%, #0b0913 76%);
+    }
+    .stage img { display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; min-height: 0; }
+    .timeline { padding: .65rem .9rem .7rem; }
+    .timeline-header { margin-bottom: .2rem; }
+    .timeline-header strong { font-size: .86rem; }
+    input { width: 100%; margin: .18rem 0 .3rem; accent-color: var(--amber); cursor: pointer; }
+    .dates { position: relative; display: flex; gap: .35rem; overflow: auto; scrollbar-width: thin; padding: 2px 2px 4px; }
+    button, select {
+        min-height: 32px; border: 1px solid var(--line); border-radius: 8px;
+        background: #201a30; color: var(--ink); padding: .2rem .6rem; font: inherit;
+    }
+    button { cursor: pointer; }
+    button:hover:not(:disabled), .dates button[aria-current="true"] { border-color: var(--amber); color: var(--amber); }
+    button:disabled { color: var(--muted); opacity: .48; cursor: default; }
+    :focus-visible { outline: 2px solid #d1baff; outline-offset: 2px; }
+    .dates button { flex: none; font: 600 .72rem/1.3 ui-monospace, monospace; }
+    .controls { margin-top: .35rem; }
+    .transport, .speed { display: flex; align-items: center; gap: .35rem; }
+    .speed, a { color: var(--muted); font-size: .78rem; }
+    a { text-underline-offset: .2em; }
+    a:hover { color: var(--ink); }
+    #play { min-width: 6.1rem; border-color: transparent; color: #20132a; background: linear-gradient(110deg, #ffc785, #e8b1ff); font-weight: 750; }
+    @media (max-width: 400px) {
+        .readout, .timeline { padding-inline: .55rem; }
+        .controls { justify-content: flex-start; }
+        #elapsed { font-size: .68rem; }
+    }
+</style>
+</head>
+<body>
+<main aria-label="SPHEREx observation time-lapse">
+    <header class="readout">
+        <div><small>OBSERVATION DATE</small><strong id="date"></strong></div>
+        <span id="elapsed"></span>
+    </header>
+    <div class="stage"><img id="image" alt="SPHEREx infrared observation cutout"></div>
+    <section class="timeline" aria-label="Observation timeline">
+        <div class="timeline-header"><strong>Observation timeline</strong><span id="position"></span></div>
+        <input id="seek" type="range" min="0" value="0" aria-label="Jump to a visit">
+        <div id="dates" class="dates" aria-label="Visit dates"></div>
+        <div class="controls">
+            <div class="transport">
+                <button type="button" id="previous" aria-label="Previous observation">←</button>
+                <button type="button" id="play">▶ Play</button>
+                <button type="button" id="next" aria-label="Next observation">→</button>
+            </div>
+            <div class="speed">
+                <label for="speed">Speed</label>
+                <select id="speed">
+                    <option value="2600">0.5×</option>
+                    <option value="1300" selected>1×</option>
+                    <option value="650">2×</option>
+                    <option value="325">4×</option>
+                </select>
+            </div>
+            <a id="source" target="_blank" rel="noopener noreferrer" hidden>FITS source ↗</a>
+        </div>
+    </section>
+</main>
+<script id="frames" type="application/json">$frames</script>
+<script>
+const get = (id) => document.getElementById(id);
+const frames = JSON.parse(get("frames").textContent);
+const date = get("date");
+const image = get("image");
+const elapsed = get("elapsed");
+const position = get("position");
+const seek = get("seek");
+const dates = get("dates");
+const play = get("play");
+const speed = get("speed");
+const previous = get("previous");
+const next = get("next");
+const source = get("source");
+const last = frames.length - 1;
+let index = 0;
+let timer = null;
+
+const dateButtons = frames.map((frame, i) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = /^\d{4}-\d{2}-\d{2}/.test(frame.date) ? frame.date.slice(0, 10) : frame.date;
+    button.setAttribute("aria-label", "Visit " + (i + 1) + " · " + frame.date);
+    button.addEventListener("click", () => jump(i));
+    dates.append(button);
+    return button;
+});
+seek.max = last;
+
+function formatElapsed(days) {
+    if (days >= 1) return days.toFixed(2) + " days";
+    if (days >= 1 / 24) return (days * 24).toFixed(2) + " hours";
+    if (days >= 1 / 1440) return (days * 1440).toFixed(1) + " min";
+    return (days * 86400).toFixed(1) + " sec";
+}
+
+function show() {
+    const frame = frames[index];
+    image.src = frame.image;
+    image.alt = "SPHEREx infrared cutout, " + frame.date;
+    date.textContent = frame.date.replace(/(\d)T/, "$$1 ");
+    elapsed.textContent = index === 0 ? "First visit" : "+" + formatElapsed(frame.mjd - frames[0].mjd) + " since first visit";
+    position.textContent = "Visit " + (index + 1) + " / " + frames.length + (frame.wavelength ? " · " + frame.wavelength : "");
+    seek.value = index;
+    seek.setAttribute("aria-valuetext", "Visit " + (index + 1) + ", " + frame.date);
+    previous.disabled = index === 0;
+    next.disabled = index === last;
+    source.hidden = !frame.source;
+    if (frame.source) source.href = frame.source;
+    else source.removeAttribute("href");
+    dateButtons.forEach((button, i) => button.setAttribute("aria-current", i === index ? "true" : "false"));
+    const active = dateButtons[index];
+    if (active.offsetLeft < dates.scrollLeft || active.offsetLeft + active.offsetWidth > dates.scrollLeft + dates.clientWidth) {
+        dates.scrollLeft = active.offsetLeft;
+    }
+}
+
+function pause() {
+    if (timer !== null) window.clearInterval(timer);
+    timer = null;
+    play.textContent = "▶ Play";
+}
+
+function start() {
+    play.textContent = "❚❚ Pause";
+    timer = window.setInterval(() => {
+        index += 1;
+        show();
+        if (index === last) pause();
+    }, Number(speed.value));
+}
+
+function jump(visit) {
+    pause();
+    index = Math.max(0, Math.min(last, visit));
+    show();
+}
+
+play.addEventListener("click", () => {
+    if (timer !== null) {
+        pause();
+        return;
+    }
+    if (index === last) jump(0);
+    start();
+});
+previous.addEventListener("click", () => jump(index - 1));
+next.addEventListener("click", () => jump(index + 1));
+seek.addEventListener("input", () => jump(Number(seek.value)));
+speed.addEventListener("change", () => {
+    if (timer !== null) {
+        pause();
+        start();
+    }
+});
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden) pause();
+});
+show();
+</script>
+</body>
+</html>

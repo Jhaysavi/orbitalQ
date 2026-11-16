@@ -1,6 +1,8 @@
 # Streamlit interface
 
-**Home** introduces the project and links to the real DR1 spectral preview and packaged examples. **Solution** explains the observation workflow, **About OrbitalQ** provides the beginner guide, and **Contact** links to the team portfolios. Use **Compare Level 2 visits** to open the observation workspace. **Load real example** opens the two archive files listed in `app.py`. After loading, the comparison appears above the file controls and observation metadata. **Real DR1 sky preview** displays spectral channels. The Level 2 workspace uses separate observation timestamps.
+**Home** introduces OrbitalQ and walks through a first observation. **Solution** opens the explorer. **Team** links to the project team’s portfolios, **Documentation** covers references and the delivery and research plans, and **About** describes the technical approach.
+
+Inside Solution, **Compare visits** opens the packaged Barnard’s Star and WISE 0855 sequences. **Spectral preview** displays the DR1 All-Sky Cube by wavelength. The **FITS workspace** accepts public archive URLs and uploaded Level 2 observations, and includes a two-exposure DR1 example. Target coordinates and display settings appear next to the spectral and FITS workspaces.
 
 - **Swipe** uses the same color stretch for both native cutouts. It is available when both contain valid pixels and have matching dimensions and image units. The **Auto-Blink A/B** button in Swipe alternates the two real images until paused. The comparison shows the elapsed time when both visits have valid MJD-OBS values.
 - **Blink** switches between observations. **Before / after** places the images side by side.
@@ -12,14 +14,12 @@ Presentation code and assets are in [`ui/`](../ui/). [`app.py`](../app.py) handl
 
 The root [HTML prototype](../viewer.html) uses illustrative observations for design exploration. The [static viewer](../dist/index.html) packages real observations in its case-data script. The builder replaces that script with data from validated FITS manifests.
 
-**About OrbitalQ** includes a public getting-started guide, two exercises, and team links. The guide can open the spectral preview or load the built-in pair directly in the Level 2 workspace. See [`ui/about.py`](../ui/about.py) for its content.
-
 ### External study resources
 
 The WISE 0855 study links to a [Pan-STARRS optical cutout](https://ps1images.stsci.edu/cgi-bin/ps1cutouts?pos=133.786245+-7.244372&filter=color&filter=g&filter=r&filter=i&filter=z&filter=y&filetypes=stack&auxiliary=data&size=240&output_size=0&verbose=0&autoscale=99.500000&catlist=) from STScI and to [WiseView](https://byw.tools/wiseview) from Backyard Worlds. In WiseView, enter RA `133.786245` and Dec `-7.244372` to examine the reference field. These external views provide context for the SPHEREx observations. The app keeps data from each survey separate.
 
-### Ready-to-view examples
+### Compare visits
 
-The Streamlit navigation includes **Ready-to-view examples**. It reads the packaged Barnard’s Star and WISE 0855 cutouts from the repository, then shows their visit dates, elapsed time, Swipe and Auto-Blink controls, and FITS provenance. Comparing the packaged visits requires no remote FITS download. The example renderer and the observation interval are implemented directly in `app.py`.
+The comparison workspace reads the packaged Barnard’s Star and WISE 0855 cutouts from the repository, then shows their visit dates, elapsed time, Swipe and Auto-Blink controls, and FITS provenance. Comparing the packaged visits requires no remote FITS download. The example renderer and the observation interval are implemented directly in `app.py`.
 
-**Time lapse** offers playback, speed, previous and next controls, and direct jumps on the observation timeline. It shows the real time elapsed since the first visit. The packaged examples use their stored images. The Level 2 workspace can also play uploaded or archive-loaded visits with distinct timestamps and matching detector, units, and cutout dimensions. The view uses a shared display stretch and native pixel grids.
+**Time-lapse** offers playback, speed, previous and next controls, and direct jumps using the date buttons or slider. Playback spends equal screen time on each visit. It shows the real time elapsed since the first visit. The packaged examples use their stored images. The Level 2 workspace can also play uploaded or archive-loaded visits with distinct timestamps and matching detector, units, and cutout dimensions. The view uses a shared display stretch and native pixel grids.
