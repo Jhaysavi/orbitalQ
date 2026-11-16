@@ -920,7 +920,9 @@ def render_spectral_preview():
             m1, m2, m3 = st.columns(3)
             m1.metric("Wavelength", f"{wavelength:.3f} µm")
             m2.metric("Detector", f"{detector} · channel {subchannel}")
-            centre_hits = nhits[int(round(cy)), int(round(cx))]
+            centre_x = int(np.clip(round(cx), 0, image.shape[1] - 1))
+            centre_y = int(np.clip(round(cy), 0, image.shape[0] - 1))
+            centre_hits = nhits[centre_y, centre_x]
             m3.metric(
                 "Centre NHITS",
                 str(int(centre_hits)) if np.isfinite(centre_hits) else "unavailable",
@@ -937,7 +939,7 @@ def render_spectral_preview():
                 st.write(
                     f"Cutout median: **{np.nanmedian(image):.5g} MJy/sr** · "
                     f"Valid pixels: **{int(finite.sum())}/{image.size}** · "
-                    f"Centre pixel: **{image[int(round(cy)), int(round(cx))]:.5g} MJy/sr**"
+                    f"Centre pixel: **{image[centre_y, centre_x]:.5g} MJy/sr**"
                 )
             st.caption(
                 f"Cube pixel: ({x:.2f}, {y:.2f}) · Tile: Npix10226 · Release: DR1 · "
@@ -1100,123 +1102,125 @@ def render_fits_workspace():
             "Browse a bounded folder sample, then load "
             "selected FITS files; only their own WCS can confirm target coverage."
         )
-        release_name = st.selectbox(
-            "Data release",
-            ["DR1", "QR3"],
-            key="s3_release",
-        )
-        release_prefix = f"{release_name.lower()}/level2/"
-        try:
-            with st.spinner("Listing public planning periods…"):
-                period_result = cached_s3_prefixes(release_prefix)
-            periods = sorted(period_result["prefixes"], reverse=True)
-            if not periods:
-                st.warning("The public archive returned no planning-period folders.")
-            else:
-                if period_result["truncated"]:
-                    st.warning(
-                        "The planning-period listing is bounded and incomplete. "
-                        "A missing folder is not evidence of missing observations."
-                    )
-                period = st.selectbox(
-                    "Planning period",
-                    periods,
-                    format_func=lambda value: value.rstrip("/").split("/")[-1],
-                    key=f"s3_period_{release_name}",
-                )
-                run_result = cached_s3_prefixes(period)
-                runs = run_result["prefixes"]
-                if not runs:
-                    st.warning("No processing runs were listed for this planning period.")
+        browse_enabled = st.checkbox("Connect to the public archive", key="enable_s3_browser")
+        if browse_enabled:
+            release_name = st.selectbox(
+                "Data release",
+                ["DR1", "QR3"],
+                key="s3_release",
+            )
+            release_prefix = f"{release_name.lower()}/level2/"
+            try:
+                with st.spinner("Listing public planning periods…"):
+                    period_result = cached_s3_prefixes(release_prefix)
+                periods = sorted(period_result["prefixes"], reverse=True)
+                if not periods:
+                    st.warning("The public archive returned no planning-period folders.")
                 else:
-                    run = st.selectbox(
-                        "Processing run",
-                        runs,
-                        format_func=lambda value: value.rstrip("/").split("/")[-1],
-                        key=f"s3_run_{period}",
-                    )
-                    detector_result = cached_s3_prefixes(run)
-                    detectors = detector_result["prefixes"]
-                    if not detectors:
-                        st.warning("No detector folders were listed for this run.")
-                    else:
-                        detector = st.selectbox(
-                            "Detector folder",
-                            detectors,
-                            format_func=lambda value: value.rstrip("/").split("/")[-1],
-                            key=f"s3_detector_{run}",
+                    if period_result["truncated"]:
+                        st.warning(
+                            "The planning-period listing is bounded and incomplete. "
+                            "A missing folder is not evidence of missing observations."
                         )
-                        file_result = cached_s3_files(detector, 24)
-                        archive_files = file_result["files"]
-                        if archive_files:
-                            st.caption(
-                                f"Showing {len(archive_files)} public FITS files from "
-                                f"`{detector.rstrip('/').split('/')[-1]}`."
-                                + (" More files exist in this folder." if file_result["truncated"] else "")
-                            )
-                            st.dataframe(
-                                [{
-                                    "filename": item["filename"],
-                                    "size_mb": round(item["size_bytes"] / (1024 * 1024), 1),
-                                    "last_modified": item["last_modified"],
-                                } for item in archive_files],
-                                use_container_width=True,
-                                hide_index=True,
-                            )
-                            file_labels = [
-                                f"{item['filename']} · {item['size_bytes'] / (1024 * 1024):.1f} MB"
-                                for item in archive_files
-                            ]
-                            selected_files = st.multiselect(
-                                "Select files to verify at the current target",
-                                options=list(range(len(archive_files))),
-                                default=[],
-                                format_func=lambda index: file_labels[index],
-                                key=f"s3_files_{detector}",
-                            )
-                            if st.button(
-                                "Verify FITS WCS and load selected files",
-                                disabled=not selected_files,
-                            ):
-                                loaded_files = []
-                                load_errors = []
-                                with st.spinner("Reading selected FITS cutouts and checking WCS…"):
-                                    for index in selected_files:
-                                        item = archive_files[index]
-                                        try:
-                                            loaded_files.append(cached_remote_level2(
-                                                LEVEL2_CACHE_VERSION,
-                                                item["source_url"],
-                                                float(ra),
-                                                float(dec),
-                                                int(cutout_size),
-                                            ))
-                                        except Exception as exc:
-                                            load_errors.append(f"{item['filename']}: {exc}")
-                                if loaded_files:
-                                    existing = st.session_state.get("remote_frames", [])
-                                    by_url = {frame.source_url: frame for frame in existing}
-                                    by_url.update({frame.source_url: frame for frame in loaded_files})
-                                    st.session_state["remote_frames"] = list(by_url.values())
-                                st.session_state["s3_load_errors"] = load_errors
-                                st.session_state["s3_load_count"] = len(loaded_files)
-                                st.rerun()
+                    period = st.selectbox(
+                        "Planning period",
+                        periods,
+                        format_func=lambda value: value.rstrip("/").split("/")[-1],
+                        key=f"s3_period_{release_name}",
+                    )
+                    run_result = cached_s3_prefixes(period)
+                    runs = run_result["prefixes"]
+                    if not runs:
+                        st.warning("No processing runs were listed for this planning period.")
+                    else:
+                        run = st.selectbox(
+                            "Processing run",
+                            runs,
+                            format_func=lambda value: value.rstrip("/").split("/")[-1],
+                            key=f"s3_run_{period}",
+                        )
+                        detector_result = cached_s3_prefixes(run)
+                        detectors = detector_result["prefixes"]
+                        if not detectors:
+                            st.warning("No detector folders were listed for this run.")
                         else:
-                            st.info("No FITS files were listed in this detector folder.")
-        except Exception as exc:
-            st.error(f"Public S3 archive browsing failed: {exc}")
-            st.caption(
-                "No coverage conclusion is drawn from a listing or network failure. "
-                "The verified example, direct FITS URL and upload paths remain available."
-            )
-        for error in st.session_state.pop("s3_load_errors", []):
-            st.warning(f"Selected file was not loaded: {error}")
-        loaded_count = st.session_state.pop("s3_load_count", 0)
-        if loaded_count:
-            st.info(
-                f"{loaded_count} selected file(s) passed their FITS WCS checks. "
-                "This is a user-selected folder sample, not a global coverage search."
-            )
+                            detector = st.selectbox(
+                                "Detector folder",
+                                detectors,
+                                format_func=lambda value: value.rstrip("/").split("/")[-1],
+                                key=f"s3_detector_{run}",
+                            )
+                            file_result = cached_s3_files(detector, 24)
+                            archive_files = file_result["files"]
+                            if archive_files:
+                                st.caption(
+                                    f"Showing {len(archive_files)} public FITS files from "
+                                    f"`{detector.rstrip('/').split('/')[-1]}`."
+                                    + (" More files exist in this folder." if file_result["truncated"] else "")
+                                )
+                                st.dataframe(
+                                    [{
+                                        "filename": item["filename"],
+                                        "size_mb": round(item["size_bytes"] / (1024 * 1024), 1),
+                                        "last_modified": item["last_modified"],
+                                    } for item in archive_files],
+                                    use_container_width=True,
+                                    hide_index=True,
+                                )
+                                file_labels = [
+                                    f"{item['filename']} · {item['size_bytes'] / (1024 * 1024):.1f} MB"
+                                    for item in archive_files
+                                ]
+                                selected_files = st.multiselect(
+                                    "Select files to verify at the current target",
+                                    options=list(range(len(archive_files))),
+                                    default=[],
+                                    format_func=lambda index: file_labels[index],
+                                    key=f"s3_files_{detector}",
+                                )
+                                if st.button(
+                                    "Verify FITS WCS and load selected files",
+                                    disabled=not selected_files,
+                                ):
+                                    loaded_files = []
+                                    load_errors = []
+                                    with st.spinner("Reading selected FITS cutouts and checking WCS…"):
+                                        for index in selected_files:
+                                            item = archive_files[index]
+                                            try:
+                                                loaded_files.append(cached_remote_level2(
+                                                    LEVEL2_CACHE_VERSION,
+                                                    item["source_url"],
+                                                    float(ra),
+                                                    float(dec),
+                                                    int(cutout_size),
+                                                ))
+                                            except Exception as exc:
+                                                load_errors.append(f"{item['filename']}: {exc}")
+                                    if loaded_files:
+                                        existing = st.session_state.get("remote_frames", [])
+                                        by_url = {frame.source_url: frame for frame in existing}
+                                        by_url.update({frame.source_url: frame for frame in loaded_files})
+                                        st.session_state["remote_frames"] = list(by_url.values())
+                                    st.session_state["s3_load_errors"] = load_errors
+                                    st.session_state["s3_load_count"] = len(loaded_files)
+                                    st.rerun()
+                            else:
+                                st.info("No FITS files were listed in this detector folder.")
+            except Exception as exc:
+                st.error(f"Public S3 archive browsing failed: {exc}")
+                st.caption(
+                    "No coverage conclusion is drawn from a listing or network failure. "
+                    "The verified example, direct FITS URL and upload paths remain available."
+                )
+            for error in st.session_state.pop("s3_load_errors", []):
+                st.warning(f"Selected file was not loaded: {error}")
+            loaded_count = st.session_state.pop("s3_load_count", 0)
+            if loaded_count:
+                st.info(
+                    f"{loaded_count} selected file(s) passed their FITS WCS checks. "
+                    "This is a user-selected folder sample, not a global coverage search."
+                )
 
     with st.expander("Load from a public FITS link"):
         with st.form("remote_fits_form"):
