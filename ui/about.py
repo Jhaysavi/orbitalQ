@@ -60,6 +60,12 @@ the file covers it. When present, the viewer reads the matching **FLAGS** and
 **VARIANCE** cutouts and records the original source, observation time, detector
 and processing version.
 
+### How to spot object motion
+
+- **Anchor on background stars:** Fixed stars stay in place across visits; a nearby high-proper-motion or solar-system target shifts relative to them.
+- **Use Time-lapse + Crosshair + Zoom:** Enable **Crosshair** and **2× / 3× Zoom** in the time-lapse player to spot small pixel-level displacements between epochs.
+- **Verify with Swipe and metadata:** Drag **Swipe** or run **Auto-Blink A/B**, then check elapsed time, detector compatibility, **FLAGS**, and **VARIANCE** before interpreting a shift.
+
 ### What to check before measuring a change
 
 Check image registration, wavelength and detector compatibility, quality
@@ -74,7 +80,7 @@ def render_documentation():
     st.markdown("""
 <section class="oq-about-intro">
   <h1>Documentation</h1>
-  <p>Find the data sources, software stack, and proposed plan for running and evaluating OrbitalQ.</p>
+  <p>Official U.S. data sources, software architecture, and proposed plans for running and evaluating OrbitalQ.</p>
 </section>
 """, unsafe_allow_html=True)
 
@@ -85,15 +91,23 @@ def render_documentation():
 
     with references:
         st.markdown(f"""
-| Resource | How OrbitalQ uses it |
+| Official U.S. Resource | How OrbitalQ uses it |
 | --- | --- |
-| [NASA/IPAC IRSA SPHEREx archive](https://irsa.ipac.caltech.edu/spherex-archive-documentation/spherex-data-access/) | Public FITS exposures and archive browsing for DR1 and QR3. |
-| [SPHEREx DR1 overview](https://irsa.ipac.caltech.edu/data/SPHEREx/docs/overview_dr1.html) · [Data products](https://caltech-ipac.github.io/spherex-archive-documentation/spherex-data-products/) | All-Sky Cube channels, FITS product definitions and provenance. |
+| [NASA JPL SPHEREx Mission](https://www.jpl.nasa.gov/missions/spherex/) | Mission overview, 102-color infrared survey design, and science objectives. |
+| [NASA/IPAC IRSA SPHEREx Archive](https://irsa.ipac.caltech.edu/Missions/spherex.html) · [User Guide](https://caltech-ipac.github.io/spherex-archive-documentation/) | Public FITS exposures, cloud archive browsing, and Level 2 provenance. |
+| [SPHEREx DR1 Overview](https://irsa.ipac.caltech.edu/data/SPHEREx/docs/overview_dr1.html) · [Explanatory Supplement](https://irsa.ipac.caltech.edu/data/SPHEREx/docs/SPHEREx_Expsupp.pdf) | All-Sky Cube channels, FITS product definitions, and calibration notes. |
+| [NASA Science: WISE/NEOWISE](https://science.nasa.gov/mission/neowise/) · [STScI Pan-STARRS](https://ps1images.stsci.edu/cgi-bin/ps1cutouts) | Independent U.S. infrared and optical survey context for moving-object fields. |
 | SPHEREx SkyShift (Ayoub, Abdou and Ilyes) | Processed Barnard’s Star and WISE 0855 cutouts included in the examples. [MIT license]({REPO}/blob/main/dist/licenses/skyshift.txt) |
-| [Scientific methods]({REPO}/blob/main/docs/scientific-methods.md) · [Research notes]({REPO}/tree/main/study) | Implementation choices, coverage checks, limitations and reproducible study scripts. |
+| [Scientific methods]({REPO}/blob/main/docs/scientific-methods.md) · [Repository structure]({REPO}/blob/main/docs/repository-structure.md) · [Research notes]({REPO}/tree/main/study) | Implementation choices, coverage checks, limitations, and reproducible study scripts. |
+
+### Application architecture (`app.py` entrypoint)
+
+- **Streamlit entrypoint (`app.py`):** Renders the `Home`, `Solution`, `Team`, `Documentation`, and `About` pages, manages target coordinates, and runs the comparison workspace.
+- **Core science modules (`core/`):** Handles IRSA archive listing (`archive.py`), coordinate resolution (`coordinates.py`), Level 2 FITS/WCS cutouts (`fits_reader.py`), provenance export (`provenance.py`), and chronological/unit validation (`validation.py`).
+- **Interface components (`ui/`):** Provides the interactive `timeline.html` player (with **Zoom** and **Crosshair** motion aids), `swipe.html` A/B divider, `about.py`, `presentation.py`, and `explorer.css`.
 
 The app uses **Python and Streamlit** for the interface, **Astropy** for FITS
-and WCS handling, **NumPy and Matplotlib** for images, and **HTML, CSS and
+and WCS handling, **NumPy and Matplotlib** for images, and **HTML, CSS, and
 JavaScript** for playback and comparison controls.
 """)
 
