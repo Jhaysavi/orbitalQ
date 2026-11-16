@@ -20,7 +20,8 @@
     border-radius: 18px;
     padding: .65rem clamp(.7rem, 2vw, 1.25rem);
     margin-bottom: .65rem;
-    background: #171322;
+    background: linear-gradient(135deg, #1b1628 0%, #151220 100%);
+    box-shadow: 0 12px 30px rgba(6, 4, 14, .28);
 }
 .st-key-oq-nav-links button {
     min-height: 40px;
@@ -48,19 +49,21 @@
 .oq-brand strong span { color: var(--oq-amber); }
 .oq-brand small { color: var(--oq-muted); font: .7rem/1.4 var(--oq-mono); }
 
-[data-testid="stRadio"] [role="radiogroup"] { gap: .35rem; flex-wrap: wrap; }
+[data-testid="stRadio"] [role="radiogroup"] { gap: .4rem; flex-wrap: wrap; }
 [data-testid="stRadio"] [role="radiogroup"] > label {
     min-height: 2.25rem;
     border: 1px solid var(--oq-border);
-    border-radius: 9px;
-    padding: .35rem .68rem;
+    border-radius: 10px;
+    padding: .35rem .75rem;
     margin: 0;
     background: var(--oq-surface);
+    transition: border-color .15s ease, background-color .15s ease, color .15s ease;
 }
 [data-testid="stRadio"] [role="radiogroup"] > label:has(input:checked) {
     border-color: #b0805e;
     background: #332432;
     color: var(--oq-amber);
+    box-shadow: 0 0 0 1px rgba(255, 199, 133, .18);
 }
 [data-testid="stRadio"] [role="radiogroup"] > label:hover {
     border-color: var(--oq-lilac);
@@ -216,10 +219,12 @@
     letter-spacing: .035em;
     text-transform: uppercase;
 }
+[data-testid="stVerticalBlockBorderWrapper"] > div:has(> .st-key-oq-targets),
 [data-testid="stVerticalBlockBorderWrapper"] > div:has(> .st-key-oq-instrumentation),
 [data-testid="stMetric"], [data-testid="stFileUploaderDropzone"] {
     border-color: var(--oq-border);
-    background: var(--oq-surface);
+    background: linear-gradient(180deg, #1b1628 0%, #151220 100%);
+    border-radius: 14px;
 }
 [data-testid="stMetric"] { border: 1px solid var(--oq-border); border-radius: 10px; padding: .7rem; }
 [data-testid="stMetricValue"] { font: 650 clamp(.86rem, 1.7vw, 1.16rem)/1.4 var(--oq-mono); }
