@@ -14,7 +14,6 @@ UI_DIR = Path(__file__).resolve().parent
 LOGO_PATH = UI_DIR.parent / "orbitalq-logo.png"
 FAVICON_PATH = UI_DIR.parent / "favicon.png"
 HERO_FITS = "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/1/level2_2025W35_1A_0432_4D1_spx_l2b-v27-2026-230.fits"
-HERO_SOURCE = "https://github.com/ayoubna99/spherex-skyshift/blob/170e23075e88f27b10d1a1092c4147644386f6bf/frontend/static/frames_barnard.json"
 
 
 @st.cache_data(show_spinner=False)
@@ -50,7 +49,6 @@ def render_hero_observation():
   <figcaption>
     <time datetime="2025-08-27">27 AUG 2025 · UTC</time>
     <a href="{HERO_FITS}">FITS exposure ↗</a>
-    <a href="{HERO_SOURCE}">Preview source ↗</a>
   </figcaption>
 </figure>
 """, unsafe_allow_html=True)

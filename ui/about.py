@@ -89,7 +89,7 @@ def render_documentation():
 | --- | --- |
 | [NASA/IPAC IRSA SPHEREx archive](https://irsa.ipac.caltech.edu/spherex-archive-documentation/spherex-data-access/) | Public FITS exposures and archive browsing for DR1 and QR3. |
 | [SPHEREx DR1 overview](https://irsa.ipac.caltech.edu/data/SPHEREx/docs/overview_dr1.html) · [Data products](https://caltech-ipac.github.io/spherex-archive-documentation/spherex-data-products/) | All-Sky Cube channels, FITS product definitions and provenance. |
-| [SPHEREx SkyShift](https://github.com/ayoubna99/spherex-skyshift/tree/170e23075e88f27b10d1a1092c4147644386f6bf) | Processed Barnard’s Star and WISE 0855 cutouts included in the examples. [MIT license]({REPO}/blob/main/dist/licenses/skyshift.txt) |
+| SPHEREx SkyShift (Ayoub, Abdou and Ilyes) | Processed Barnard’s Star and WISE 0855 cutouts included in the examples. [MIT license]({REPO}/blob/main/dist/licenses/skyshift.txt) |
 | [Scientific methods]({REPO}/blob/main/docs/scientific-methods.md) · [Research notes]({REPO}/tree/main/study) | Implementation choices, coverage checks, limitations and reproducible study scripts. |
 
 The app uses **Python and Streamlit** for the interface, **Astropy** for FITS
