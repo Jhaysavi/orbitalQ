@@ -1,4 +1,4 @@
-"""Public introduction and getting-started guide for OrbitalQ."""
+"""Technical information, project documentation, and external survey links."""
 
 import streamlit as st
 
@@ -38,77 +38,138 @@ def render_wise_field_resources():
         )
 
 
-def open_view(view, action=None):
-    st.session_state["explorer_view"] = view
-    if action is not None:
-        action()
-
-
-def render_about(load_example):
+def render_about():
     st.markdown("""
-<section class="oq-about-intro" aria-labelledby="about-title">
-  <div class="oq-section-label">NASA Space Apps 2026 / Planet X and SPHEREx</div>
-  <h2 id="about-title">About OrbitalQ</h2>
-  <p>What can you learn by looking at the same patch of sky twice? OrbitalQ puts real NASA SPHEREx observations in a browser so anyone can explore infrared light and look for changes between visits.</p>
+<section class="oq-about-intro">
+  <h1>About the technology</h1>
+  <p>OrbitalQ brings NASA SPHEREx data products into an explorer for visual inspection of infrared observations.</p>
 </section>
 """, unsafe_allow_html=True)
-    example, spectral = st.columns(2)
-    example.button(
-        "Try two real observations", type="primary", on_click=open_view,
-        args=("Compare Level 2 visits", load_example), use_container_width=True,
-    )
-    spectral.button(
-        "Explore the infrared sky", on_click=open_view,
-        args=("Real DR1 sky preview",), use_container_width=True,
-    )
+    st.subheader("Two views of the same sky")
     st.markdown("""
-<section class="oq-about-section" aria-labelledby="getting-started">
-  <h3 id="getting-started">Your first observation</h3>
-  <ol class="oq-about-grid">
-    <li><h4>Open the real example</h4><p>The app loads two public images and shows its progress as it checks that each exposure covers the example field.</p></li>
-    <li><h4>Compare the images</h4><p>Drag Swipe across the image, switch between visits with Blink, or play Time lapse to step through dated visits. Look for points that seem to move relative to their neighbours.</p></li>
-    <li><h4>Follow the evidence</h4><p>Open Observation timeline to see dates and detectors. Use Quality and provenance to inspect data flags and file sources. You can export the observation list as a CSV.</p></li>
-  </ol>
-</section>
-<section class="oq-about-section" aria-labelledby="studies">
-  <h3 id="studies">Two things to try</h3>
-  <div class="oq-about-grid oq-about-pair">
-    <article><div class="oq-section-label">Wavelength</div><h4>Explore the WISE 0855−0714 field</h4><p>In Real DR1 sky preview, choose the WISE preset and change the channel. The 102 channels represent different wavelengths of infrared light. Compare how the same field looks as you move the slider.</p></article>
-    <article><div class="oq-section-label">Time</div><h4>Compare two visits to one field</h4><p>Start with the public example, then try your own Level 2 FITS files. Check the duration between visits and use surrounding stars as reference points.</p></article>
-  </div>
-</section>
-""", unsafe_allow_html=True)
+| Data product | What the explorer displays |
+| --- | --- |
+| Level 2 Spectral Images | Individual exposures ordered by their FITS observation times. Used for viewing visits in sequence or comparing a pair. |
+| DR1 All-Sky Cube | A cutout at one of 102 nominal infrared wavelength channels in the built-in WISE 0855 field. |
+
+### From sky coordinates to image pixels
+
+Level 2 FITS files contain an image and a World Coordinate System (WCS).
+OrbitalQ uses the WCS to locate the requested sky position and checks whether
+the file covers it. When present, the viewer reads the matching **FLAGS** and
+**VARIANCE** cutouts and records the original source, observation time, detector
+and processing version.
+
+### What to check before measuring a change
+
+Check image registration, wavelength and detector compatibility, quality
+flags, uncertainty, and the effects of the point spread function and background.
+For a moving target, account for its reference epoch and propagate the coordinates
+to each observation date. A visible shift is a candidate for follow-up.
+""")
     render_wise_field_resources()
-    with st.expander("Using your own files"):
-        st.markdown(
-            "Set a sky position in **Target coordinates**, then open **Compare Level 2 visits**. "
-            "Browse public SPHEREx folders, paste a public FITS link, or upload files "
-            "you already downloaded. Folder browsing lists archive files. When you load a file, "
-            "OrbitalQ checks its sky coordinates to confirm it covers your target."
-        )
-    with st.expander("What counts as evidence of change?"):
-        st.markdown(
-            "The All-Sky Cube shows spectral context. Comparisons over time use separate "
-            "Level 2 observations with their own timestamps. An apparent shift is a clue "
-            "to investigate. Compare wavelengths and quality flags, then check image alignment "
-            "and measurement uncertainty before drawing a conclusion."
-        )
 
-    st.subheader("Documentation and data")
-    st.markdown(
-        f"[Scientific methods]({REPO}/blob/main/docs/scientific-methods.md) · "
-        f"[Research notes and scripts]({REPO}/tree/main/study) · "
-        f"[Project code]({REPO})"
-    )
-    st.markdown(
-        "[SPHEREx DR1 overview](https://irsa.ipac.caltech.edu/data/SPHEREx/docs/overview_dr1.html) · "
-        "[Data products](https://caltech-ipac.github.io/spherex-archive-documentation/spherex-data-products/) · "
-        "[Data releases](https://irsa.ipac.caltech.edu/spherex-archive-documentation/spherex-data-releases/)"
-    )
-    st.subheader("Meet the team")
+
+def render_documentation():
     st.markdown("""
-<div class="oq-about-grid oq-about-pair">
-  <a href="https://aspiraqualquer.vercel.app/"><strong>Aspira Qualquer</strong><span>Visit portfolio ↗</span></a>
-  <a href="https://jhay.goskip.app/"><strong>Jay</strong><span>Visit portfolio ↗</span></a>
-</div>
+<section class="oq-about-intro">
+  <h1>Documentation</h1>
+  <p>Find the data sources, software stack, and proposed plan for running and evaluating OrbitalQ.</p>
+</section>
 """, unsafe_allow_html=True)
+
+    references, business, sustainability, delivery, evaluation, research = st.tabs([
+        "References and tools", "Business model", "Sustainability", "Delivery plan",
+        "Success metrics", "Experimental roadmap",
+    ])
+
+    with references:
+        st.markdown(f"""
+| Resource | How OrbitalQ uses it |
+| --- | --- |
+| [NASA/IPAC IRSA SPHEREx archive](https://irsa.ipac.caltech.edu/spherex-archive-documentation/spherex-data-access/) | Public FITS exposures and archive browsing for DR1 and QR3. |
+| [SPHEREx DR1 overview](https://irsa.ipac.caltech.edu/data/SPHEREx/docs/overview_dr1.html) · [Data products](https://caltech-ipac.github.io/spherex-archive-documentation/spherex-data-products/) | All-Sky Cube channels, FITS product definitions and provenance. |
+| [SPHEREx SkyShift](https://github.com/ayoubna99/spherex-skyshift/tree/170e23075e88f27b10d1a1092c4147644386f6bf) | Processed Barnard’s Star and WISE 0855 cutouts included in the examples. [MIT license]({REPO}/blob/main/dist/licenses/skyshift.txt) |
+| [Scientific methods]({REPO}/blob/main/docs/scientific-methods.md) · [Research notes]({REPO}/tree/main/study) | Implementation choices, coverage checks, limitations and reproducible study scripts. |
+
+The app uses **Python and Streamlit** for the interface, **Astropy** for FITS
+and WCS handling, **NumPy and Matplotlib** for images, and **HTML, CSS and
+JavaScript** for playback and comparison controls.
+""")
+
+    with business:
+        st.markdown("""
+- OrbitalQ serves citizen scientists, educators and students exploring infrared observations.
+- Keep the public explorer, example sequences and source links free to access.
+- Seek support from education and citizen-science partners. Optional workshops could fund curriculum development and maintenance.
+- Budget for hosting, archive bandwidth, and maintenance of samples and source links.
+""")
+
+    with sustainability:
+        st.markdown("""
+- Use the existing packaged cutouts for the public demo and cache public archive reads to limit repeat fetches.
+- Keep FITS provenance and reproduction instructions with the project so another maintainer can verify the examples.
+- Monitor download failures and broken source links. The FITS workspace supports local uploads when remote archive access is unavailable.
+- Track hosting and data-transfer use before expanding the target catalogue.
+""")
+
+    with delivery:
+        st.markdown("""
+| Stage | Deliverable | Acceptance check |
+| --- | --- | --- |
+| Prototype | Packaged time-lapse, spectral preview and Level 2 FITS workspace | The examples open, dates follow the FITS metadata, and exposure links are available. |
+| Pilot | Guided sessions with students, educators and citizen-science users | Users complete the baseline tasks below and report where they get stuck. |
+| Next release | Improve onboarding and add targets with verified exposures | Each new sequence has dated frames, traceable FITS sources and documented coverage. |
+""")
+
+    with evaluation:
+        st.caption("Proposed pilot targets. These are evaluation criteria for a future pilot.")
+        st.markdown("""
+| Measure | Proposed target | How to evaluate |
+| --- | --- | --- |
+| First exploration | At least 80% of 10 pilot users reach the second Barnard visit unaided within two minutes | Observe the task from the Home page and record completion time. |
+| Data comprehension | At least 80% correctly distinguish an observation date from a wavelength channel | Ask one question after the time-lapse and spectral exercises. |
+| Provenance | Every published example frame links to its original FITS exposure | Check each link and match its timestamp against the FITS header. |
+| Coverage handling | Every out-of-field FITS fixture is rejected | Run the WCS validation tests and confirm the user-facing message in the workspace. |
+""")
+
+    with research:
+        st.markdown("""
+### Evidence-first candidate engine
+
+The proposed engine would flag observations for human review and explain each
+flag in a candidate card. The card would show the direction and magnitude of
+the change, the supporting FITS exposures, measurement uncertainty, plausible
+contamination or calibration effects, and any plausible catalogue counterpart.
+Each card would expose the rule thresholds and mark missing measurements.
+
+| Evidence | What the prototype would evaluate |
+| --- | --- |
+| Motion significance | Displacement after image registration relative to positional uncertainty and astrometric systematics. |
+| Flux variability | Change in brightness relative to its uncertainty across compatible observations. |
+| Spectral distinctiveness | Differences from an appropriate comparison population, given the available spectral measurements. |
+| Observation quality | Valid pixels, flags, signal-to-noise, and available calibration and PSF information. |
+| Catalogue status | Plausible counterparts after cross-matching at the observation epoch, with match separation and ambiguous matches recorded. |
+
+Begin with versioned, rule-based indicators. Use the five hand-picked targets
+to exercise the workflow. Evaluate thresholds on independent samples and
+controls, then report false positives by artifact type and agreement with
+reviewer assessments. Any prioritization score represents review urgency.
+Training a general ranking model would require a larger representative
+labelled dataset.
+
+### Quantum research for shortlist selection
+
+Run this as a separate research module after candidate evidence has been
+computed. Given a fixed review budget, select a shortlist that balances
+scientific interest, data quality and diversity. A QUBO would combine
+candidate utility, pairwise similarity penalties and a penalty for departing
+from the requested shortlist size.
+
+Evaluate QAOA simulation or a quantum-inspired solver against classical
+greedy and simulated-annealing baselines on the same input sets. Record
+objective value, runtime, feasible shortlist rate and scaling as the candidate
+pool grows. Use exact solutions on small instances to measure the gap from
+the optimum. Report optimization performance under the measured conditions.
+Claims about quantum advantage or discovery accuracy require separate evidence.
+""")

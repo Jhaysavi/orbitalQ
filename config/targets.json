@@ -34,7 +34,7 @@
   "SPHEREx DR1 example field": {
     "ra_deg": 160.618,
     "dec_deg": 30.6694,
-    "note": "Open Compare Level 2 visits and select Load real example to load the two example observations.",
+    "note": "Open the FITS workspace and select Load real example to load the two example observations.",
     "source": "https://irsa.ipac.caltech.edu/data/SPHEREx/docs/overview_dr1.html"
   }
 }

@@ -28,30 +28,31 @@ def read_assets():
     )
 
 
-def render_header():
-    css, preview, _, logo = read_assets()
+def render_brand():
+    css, _, _, logo = read_assets()
     st.markdown(f"""
 <style>{css}</style>
-<header class="oq-hero">
-  <div class="oq-intro">
-    <div class="oq-mission">SPHEREx data explorer <span aria-hidden="true">/</span> NASA Space Apps 2026</div>
-    <div class="oq-brand">
-      <img src="data:image/png;base64,{logo}" width="72" height="72" alt="">
-      <h1>Orbital<span>Q</span></h1>
-    </div>
-    <p class="oq-headline">See what changes in the infrared sky.</p>
-    <p class="oq-description">Explore real observations, then compare two visits to the same region of the sky.</p>
+<div class="oq-brand">
+  <img src="data:image/png;base64,{logo}" width="46" height="46" alt="">
+  <div><strong>Orbital<span>Q</span></strong><small>SPHEREx observation explorer</small></div>
+</div>
+""", unsafe_allow_html=True)
+
+
+def render_hero_observation():
+    _, preview, _, _ = read_assets()
+    st.markdown(f"""
+<figure class="oq-hero-image">
+  <div class="oq-figure-bar"><span>Barnard’s Star</span><span>SPHEREx / D1</span></div>
+  <div class="oq-figure-image">
+    <img src="data:image/png;base64,{preview}" alt="Infrared observation of the field around Barnard’s Star">
   </div>
-  <figure class="oq-hero-image">
-    <img src="data:image/png;base64,{preview}" alt="SPHEREx infrared cutout of the field around Barnard’s Star">
-    <figcaption>
-      <span>Barnard’s Star field</span>
-      <a href="{HERO_FITS}">SPHEREx DR1 FITS</a>
-      <span aria-hidden="true">·</span>
-      <a href="{HERO_SOURCE}">Processed preview</a>
-    </figcaption>
-  </figure>
-</header>
+  <figcaption>
+    <time datetime="2025-08-27">27 AUG 2025 · UTC</time>
+    <a href="{HERO_FITS}">FITS exposure ↗</a>
+    <a href="{HERO_SOURCE}">Preview source ↗</a>
+  </figcaption>
+</figure>
 """, unsafe_allow_html=True)
 
 
