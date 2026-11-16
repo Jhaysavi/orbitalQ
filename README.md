@@ -1,6 +1,6 @@
-# orbitalQ — Explore the Changing Infrared Universe
+# OrbitalQ — Explore the Changing Infrared Universe
 
-orbitalQ is a lightweight Streamlit application for exploring genuine
+OrbitalQ is a lightweight Streamlit application for exploring genuine
 NASA/IPAC IRSA SPHEREx data. It separates a fast All-Sky Cube preview from a
 time-ordered viewer for Level 2 Spectral Image FITS observations.
 
@@ -69,7 +69,8 @@ scripts are intentionally not part of the automated test suite; see
 
 | Path | Purpose |
 | --- | --- |
-| `app.py` | Streamlit user interface |
+| `app.py` | Streamlit views, archive controls and observation workflow |
+| `ui/` | [Streamlit presentation components and preview assets](docs/interface.md) |
 | `core/` | WCS, FITS, provenance and scientific validation helpers |
 | `config/` | Target presets and other small, reviewable configuration |
 | `data/` | Local cutouts, previews, manifests and cache placeholders |

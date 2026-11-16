@@ -1,9 +1,12 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { copyFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const output = "dist/index.html";
+for (const asset of ["orbitalq-logo.png", "favicon.png"]) {
+    copyFileSync(asset, join("dist", asset));
+}
 const packaged = readFileSync(output, "utf8");
 if (packaged.includes('type="application/json">[{')) {
     console.log("Using packaged SPHEREx observations.");

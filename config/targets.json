@@ -1,7 +1,40 @@
 {
-  "Barnard's Star": {"ra_deg": null, "dec_deg": null, "note": "Load reliable reference astrometry; proper motion must be propagated by epoch."},
-  "Epsilon Indi B": {"ra_deg": null, "dec_deg": null, "note": "Load reliable reference astrometry and validate archive coverage."},
-  "WISE 0855−0714": {"ra_deg": 133.795129, "dec_deg": -7.245147, "note": "Challenge coordinates have no stated reference epoch."},
-  "RW Aurigae": {"ra_deg": null, "dec_deg": null, "note": "Load reliable reference astrometry; verify coverage."},
-  "R Draconis": {"ra_deg": null, "dec_deg": null, "note": "Load reliable reference astrometry; verify coverage."}
+  "Barnard's Star": {
+    "ra_deg": 269.452077,
+    "dec_deg": 4.693365,
+    "note": "Catalogue field center. Account for proper motion before measuring positions.",
+    "source": "https://simbad.cds.unistra.fr/simbad/sim-basic?Ident=Barnard%27s+star",
+    "epoch": "J2000"
+  },
+  "Epsilon Indi B": {
+    "ra_deg": 331.044167,
+    "dec_deg": -56.782833,
+    "note": "Catalogue field center for the Ba/Bb pair. Account for proper motion before measuring positions.",
+    "source": "https://cdsarc.cds.unistra.fr/viz-bin/ReadMe/J/AJ/163/288",
+    "epoch": "J2000"
+  },
+  "WISE 0855−0714": {
+    "ra_deg": 133.795129,
+    "dec_deg": -7.245147,
+    "note": "Challenge coordinates have no stated reference epoch."
+  },
+  "RW Aurigae": {
+    "ra_deg": 76.956526,
+    "dec_deg": 30.401438,
+    "note": "Catalogue field center. Load Level 2 files that cover this position.",
+    "source": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=V%2A+RW+Aur",
+    "epoch": "J2000"
+  },
+  "R Draconis": {
+    "ra_deg": 248.167625,
+    "dec_deg": 66.754972,
+    "note": "Reference field center. Load Level 2 files that cover this position.",
+    "source": "https://saskatoon-rasc.github.io/Newsletters/SS_1806.pdf"
+  },
+  "SPHEREx DR1 example field": {
+    "ra_deg": 160.618,
+    "dec_deg": 30.6694,
+    "note": "Open the FITS workspace and select Load real example to load the two example observations.",
+    "source": "https://irsa.ipac.caltech.edu/data/SPHEREx/docs/overview_dr1.html"
+  }
 }
