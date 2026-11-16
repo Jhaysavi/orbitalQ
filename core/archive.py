@@ -338,6 +338,7 @@ def search_level2_footprints(
         }
 
     matches = []
+    checked = 0
     rejected = [f"Search service unavailable for {error}" for error in service_errors]
     partial = bool(service_errors)
     remaining = max_results
@@ -359,6 +360,7 @@ def search_level2_footprints(
                     "Search time budget reached; remaining candidates were not verified."
                 )
                 break
+            checked += 1
             raw_url = _value(row, "access_url", "accessurl", "url", "uri")
             remaining -= 1
             if not raw_url:
@@ -389,12 +391,14 @@ def search_level2_footprints(
                     )
                 )
             except Exception as exc:
+                partial = True
                 rejected.append(f"{filename}: {exc}")
         if time.monotonic() - started_at >= time_budget:
             break
 
     message = (
-        f"Verified {len(matches)} of at most {max_results} DR1/QR3 archive candidate(s) by FITS WCS."
+        f"Verified {len(matches)} images from {checked} checked candidates "
+        f"({sum(len(table) for _, _, table, _ in tables)} returned by SIA; releases: {' / '.join(releases)})."
     )
     if partial:
         message += " Search was incomplete; no conclusion about unverified coverage is possible."
