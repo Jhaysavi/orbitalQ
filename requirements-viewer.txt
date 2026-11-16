@@ -1,2 +1,8 @@
--r requirements-milestone-01.txt
+astropy>=6.1
+astroquery>=0.4.10
+matplotlib>=3.8
+numpy>=1.26
+pandas>=2.2
+requests>=2.31
+reproject>=0.14
 reproject>=0.14

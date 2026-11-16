@@ -3,6 +3,11 @@
 The repository keeps the application path short and makes the distinction
 between software tests and scientific investigation explicit.
 
+The runtime path is `app.py` → `ui/` → `core/`. The static deployment path is
+`scripts/build-vercel.mjs` → `build_viewer.py` → `dist/`. The research path is
+independent: `study/scripts/` produces reviewable outputs under
+`study/results/` and is never imported by the application at startup.
+
 ## Maintained source
 
 - `app.py` is the Streamlit entry point.
@@ -24,6 +29,10 @@ slow; they are not application startup dependencies.
 studies. Large inventories and FITS products remain local and are ignored by
 Git. A result is meaningful only together with its source URL/object key,
 release, processing version and retrieval date where available.
+
+The committed CSV and HTML results are retained as a research record, not as
+runtime fixtures. They should not be presented as a complete archive census
+unless their scope and retrieval date are stated.
 
 ## Runtime data
 
