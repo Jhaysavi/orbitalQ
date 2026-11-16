@@ -338,3 +338,35 @@
 @media (max-width: 520px) {
     .oq-interval { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Shared finishing pass: readable type, visible interaction states, compact mobile layout. */
+:root { --oq-muted: #c4bcd5; --oq-border: #484057; }
+.stApp { font-family: "Segoe UI", system-ui, sans-serif; }
+[data-testid="stMarkdownContainer"] p { line-height: 1.7; }
+[data-testid="stMarkdownContainer"] h2 { letter-spacing: -.025em; line-height: 1.25; }
+[data-testid="stMarkdownContainer"] h3 { letter-spacing: -.015em; line-height: 1.35; }
+[data-testid="stCaptionContainer"] { color: var(--oq-muted); }
+[data-testid="stButton"] button, [data-testid="stFormSubmitButton"] button,
+[data-testid="stLinkButton"] a { min-height: 44px; border-radius: 12px; font-weight: 600; }
+button[kind="primary"], [data-testid="stFormSubmitButton"] button[kind="primary"] {
+    background: #ffc785; color: #201426; border-color: #ffc785;
+}
+button[kind="primary"]:hover { background: #ffdaa9; color: #201426; border-color: #ffdaa9; }
+button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible {
+    outline: 3px solid #dac2ff !important; outline-offset: 3px;
+}
+[data-testid="stSegmentedControl"] { max-width: 100%; }
+[data-testid="stSegmentedControl"] button { min-height: 44px; }
+[data-testid="stAlert"] { border-radius: 12px; }
+[data-testid="stMarkdownContainer"] a { text-underline-offset: .22em; }
+[data-testid="stMetricValue"] { overflow-wrap: anywhere; }
+.oq-workspace-heading { margin-bottom: 1.25rem; }
+@media (max-width: 760px) {
+    .block-container { padding: 2.2rem 1rem 2rem; }
+    [data-testid="stSegmentedControl"] > div { flex-wrap: wrap; }
+    .oq-workspace-heading, .oq-about-intro { padding: 1.25rem; }
+    [data-testid="stMarkdownContainer"] table { display: block; overflow-x: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}

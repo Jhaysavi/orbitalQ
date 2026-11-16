@@ -210,9 +210,8 @@ def _padded_data_size(header: fits.Header) -> int:
     for axis in range(1, naxis + 1):
         elements *= max(0, int(header.get(f"NAXIS{axis}", 0) or 0))
     bitpix = abs(int(header.get("BITPIX", 0) or 0))
-    raw_size = elements * bitpix // 8
-    raw_size += int(header.get("PCOUNT", 0) or 0)
-    raw_size += int(header.get("GCOUNT", 1) or 1) - 1
+    raw_size = (elements + int(header.get("PCOUNT", 0) or 0)) * bitpix // 8
+    raw_size *= int(header.get("GCOUNT", 1) or 1)
     return ((raw_size + 2879) // 2880) * 2880
 
 
@@ -224,13 +223,15 @@ def read_level2_headers(
     """Read primary and IMAGE headers without downloading FITS image arrays."""
     client = session or requests.Session()
     primary, primary_size = _read_header(client, url, timeout=timeout)
-    image, _ = _read_header(
-        client,
-        url,
-        primary_size + _padded_data_size(primary),
-        timeout=timeout,
-    )
-    return primary, image
+    offset = primary_size + _padded_data_size(primary)
+    for _ in range(32):
+        image, header_size = _read_header(client, url, offset, timeout=timeout)
+        if str(image.get("EXTNAME", "")).strip().upper() == "IMAGE":
+            if int(image.get("NAXIS", 0)) != 2:
+                raise ValueError("IMAGE extension must be two-dimensional")
+            return primary, image
+        offset += header_size + _padded_data_size(image)
+    raise ValueError("No IMAGE extension found within 32 extensions")
 
 
 def _candidate_from_headers(
@@ -338,6 +339,7 @@ def search_level2_footprints(
         }
 
     matches = []
+    checked = 0
     rejected = [f"Search service unavailable for {error}" for error in service_errors]
     partial = bool(service_errors)
     remaining = max_results
@@ -359,6 +361,7 @@ def search_level2_footprints(
                     "Search time budget reached; remaining candidates were not verified."
                 )
                 break
+            checked += 1
             raw_url = _value(row, "access_url", "accessurl", "url", "uri")
             remaining -= 1
             if not raw_url:
@@ -389,12 +392,14 @@ def search_level2_footprints(
                     )
                 )
             except Exception as exc:
+                partial = True
                 rejected.append(f"{filename}: {exc}")
         if time.monotonic() - started_at >= time_budget:
             break
 
     message = (
-        f"Verified {len(matches)} of at most {max_results} DR1/QR3 archive candidate(s) by FITS WCS."
+        f"Verified {len(matches)} images from {checked} checked candidates "
+        f"({sum(len(table) for _, _, table, _ in tables)} returned by SIA; releases: {' / '.join(releases)})."
     )
     if partial:
         message += " Search was incomplete; no conclusion about unverified coverage is possible."
