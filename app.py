@@ -138,47 +138,81 @@ def render_site_navigation():
 
 
 def render_home():
+    st.markdown("""
+<style>
+.oq-home-copy h1 { max-width:17ch; font-size:clamp(2.2rem,4.2vw,4rem); }
+.oq-home-copy .oq-home-note { font-size:.8rem; color:#bcb0ca; margin-top:1rem; }
+.oq-home-section { margin:2.8rem 0 1rem; }
+.oq-home-section h2 { max-width:28ch; color:#f6f0ff; font-size:clamp(1.5rem,3vw,2.2rem); letter-spacing:-.035em; line-height:1.2; padding:.4rem 0; }
+.oq-home-section > p { max-width:72ch; color:#c9bfd9; line-height:1.75; }
+.oq-home-features { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; margin:1.2rem 0; padding:0; list-style:none; }
+.oq-home-feature { padding:1.6rem; min-width:0; border:1px solid #4d3c59; border-radius:20px; background:linear-gradient(145deg,#261b33,#15111f); }
+.oq-home-feature h3 { color:#f6f0ff; font-size:1.2rem; padding:.7rem 0; }
+.oq-home-feature p { color:#c9bfd9; line-height:1.7; margin:0; }
+.oq-home-number { display:inline-grid; place-items:center; width:40px; height:40px; border:1px solid #80618d; border-radius:12px; background:#372340; color:#ffcf93; font:700 .9rem monospace; }
+.oq-home-strip { display:flex; flex-wrap:wrap; gap:.65rem; padding:1.3rem 0; border-bottom:1px solid #41324e; }
+.oq-home-strip span { color:#dacbe8; font-size:.8rem; padding:.45rem .8rem; border:1px solid #493652; border-radius:999px; }
+.st-key-oq-home-cta { margin-top:2rem; padding:clamp(1.4rem,3vw,2.3rem); border:1px solid #78546f; border-radius:22px; background:linear-gradient(120deg,#3a253a,#21182e); }
+.st-key-oq-home-cta h2 { color:#ffe0b7; padding:0; }
+.st-key-oq-home-cta p { color:#d5c7df; }
+@media(max-width:760px) { .oq-home-features { grid-template-columns:1fr; } }
+</style>
+""", unsafe_allow_html=True)
     with st.container(key="oq-landing"):
         intro, observation = st.columns([1.05, 1], vertical_alignment="center", gap="large")
         with intro:
             st.markdown("""
 <div class="oq-home-copy">
-  <p class="oq-section-label">NASA Space Apps 2026 / Planet X and SPHEREx</p>
-  <h1>Watch the infrared <em>sky change.</em></h1>
-  <p>Revisit the same field across months of NASA SPHEREx observations. Play the sequence, jump to a date, or compare two visits side by side.</p>
+  <p class="oq-section-label">Meet OrbitalQ · Explore real NASA SPHEREx data</p>
+  <h1>The sky has a story.<br><em>Watch it unfold.</em></h1>
+  <p>Turn infrared observations into a journey through time. Explore a star field, compare different visits, and follow your curiosity back to the evidence.</p>
+  <p class="oq-home-note">Start with ready-to-view observations. No account needed.</p>
 </div>
 """, unsafe_allow_html=True)
             primary, secondary = st.columns([1.15, 1])
-            primary.button(
-                "Launch the explorer →", type="primary", on_click=launch_explorer, width="stretch",
-            )
-            secondary.markdown(
-                '<a class="oq-how-link" href="#oq-home-details-title">How to use it ↓</a>',
-                unsafe_allow_html=True,
-            )
+            primary.button("Explore the sky →", type="primary", on_click=launch_explorer, width="stretch")
+            secondary.markdown('<a class="oq-how-link" href="#oq-home-details-title">See how it works ↓</a>', unsafe_allow_html=True)
         with observation:
             render_hero_observation()
+            st.caption("Your starting point: the field around Barnard’s Star, observed by SPHEREx.")
     st.markdown("""
-<section class="oq-home-context">
-  <h2>Why revisit the same patch of sky?</h2>
-  <p>A source can change position or brightness between observations. OrbitalQ puts dated infrared exposures together so you can look for changes and trace each frame back to its source.</p>
+<div class="oq-home-strip" aria-label="Project highlights">
+  <span>Real infrared observations</span><span>Dated visits</span><span>Original FITS source links</span><span>Built for NASA Space Apps 2026</span>
+</div>
+<section class="oq-home-section">
+  <p class="oq-section-label">What is OrbitalQ?</p>
+  <h2>A closer look at a sky that keeps changing.</h2>
+  <p>OrbitalQ is an interactive explorer for NASA SPHEREx observations. It brings images, dates, and source information into one place, making it easier for curious people, students, and educators to inspect the infrared sky.</p>
+  <div class="oq-home-features">
+    <article class="oq-home-feature"><span class="oq-section-label">Explore time</span><h3>Return to the same field</h3><p>Play dated observations or select individual visits. Look at the target and its surroundings to investigate apparent changes.</p></article>
+    <article class="oq-home-feature"><span class="oq-section-label">Compare the details</span><h3>Take a second look</h3><p>Drag the Swipe divider, zoom in, or use the crosshair. Compare two views at your own pace.</p></article>
+    <article class="oq-home-feature"><span class="oq-section-label">Follow the evidence</span><h3>See where it came from</h3><p>Open the original FITS exposure and inspect dates, detectors, and quality information. Every interpretation starts with the data.</p></article>
+  </div>
 </section>
-<section class="oq-home-details" aria-labelledby="oq-home-details-title">
-  <h2 id="oq-home-details-title">Your first observation</h2>
-  <p>Start with Barnard’s Star. It is the field shown above.</p>
-  <ol class="oq-about-grid">
-    <li><span class="oq-section-label">Choose a target</span><h3>Open the explorer</h3><p>Choose Barnard’s Star for a bright reference field, or WISE 0855 for a fainter target.</p></li>
-    <li><span class="oq-section-label">Follow the dates</span><h3>Play or jump to a visit</h3><p>Use the timeline to compare the dates, then try Swipe to inspect a pair of visits.</p></li>
-    <li><span class="oq-section-label">Check the image</span><h3>Look at nearby stars</h3><p>Use them as reference points. Open the FITS link to trace the image back to its exposure.</p></li>
+<section class="oq-home-section" aria-labelledby="oq-home-details-title">
+  <p class="oq-section-label">Your first exploration</p>
+  <h2 id="oq-home-details-title">From curious to exploring.<br>Three simple steps.</h2>
+  <p>Start with Barnard’s Star, one of the ready-to-view fields. You can explore the examples before working with coordinates or uploading files.</p>
+  <ol class="oq-home-features">
+    <li class="oq-home-feature"><span class="oq-home-number">01</span><h3>Choose a field</h3><p>Select “Explore the sky”, then choose an available target in “Compare visits”. Each field shows the observations ready to open.</p></li>
+    <li class="oq-home-feature"><span class="oq-home-number">02</span><h3>Follow the timeline</h3><p>Press Play, pause on a visit, or select a date. Switch to Swipe to compare two observations directly.</p></li>
+    <li class="oq-home-feature"><span class="oq-home-number">03</span><h3>Investigate what you see</h3><p>Check surrounding stars and open the FITS source. Differences can come from motion, brightness, wavelength, or the way an image was observed.</p></li>
   </ol>
 </section>
 """, unsafe_allow_html=True)
-    with st.expander("When should I use the other modes?"):
-        st.markdown(
-            "**Spectral preview** lets you change wavelengths in the built-in DR1 field. "
-            "**FITS workspace** lets you browse the archive or upload Level 2 observations "
-            "for a sky position of your choice."
-        )
+    with st.expander("Do I need astronomy experience?"):
+        st.write("No. Begin with the packaged fields and the visual controls. Observation details are available when you want to go deeper.")
+    with st.expander("What can I explore beyond the examples?"):
+        st.write("Spectral preview explores infrared wavelength channels in the built-in field. FITS workspace lets you load and compare official exposures. Search NASA archive queries a sky position; results depend on archive availability.")
+    with st.expander("Does a visible difference mean a discovery?"):
+        st.write("A difference is a starting point for investigation. Measuring motion or brightness requires checks for image alignment, wavelength, quality, and uncertainty. Spectral channels represent wavelengths, not dates.")
+    with st.container(key="oq-home-cta"):
+        copy, action = st.columns([2, 1], vertical_alignment="center")
+        with copy:
+            st.subheader("Your next question starts with a closer look.")
+            st.write("Open the explorer and follow the first sequence.")
+        action.button("Start exploring →", key="home-bottom-start", type="primary",
+                      on_click=launch_explorer, width="stretch")
 
 
 def render_team():
