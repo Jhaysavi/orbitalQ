@@ -4,6 +4,12 @@ This directory contains exploratory SPHEREx work preserved from the project’s
 investigation. It is intentionally separate from the application and from
 automated unit tests.
 
+The study is part of the project evidence base: it records archive behavior,
+metadata checks, coordinate propagation experiments, and limitations found
+during development. It is not a production pipeline and should not be used to
+claim target detection or archive completeness without rerunning and
+qualifying the relevant experiment.
+
 ## Scripts
 
 Run scripts from the repository root, for example:
@@ -31,3 +37,6 @@ and must retain their provenance when reused.
 
 For the method and scientific limitations, see
 [docs/scientific-methods.md](../docs/scientific-methods.md).
+
+For environment setup and the boundary between application, build, and study
+code, see [docs/development.md](../docs/development.md).
