@@ -1376,7 +1376,7 @@ def render_fits_workspace():
                         sequence = [by_time[mjd] for mjd in sorted(by_time)]
                         if len(sequence) > 1:
                             modes.append("Time-lapse")
-                        mode = st.radio("Comparison view", modes, horizontal=True)
+                        mode = st.segmented_control("Comparison view", modes, default=modes[0]) or modes[0]
                         if "Swipe" not in modes:
                             st.caption("Swipe requires matching image dimensions and units, with valid pixels in both visits.")
                         if mode != "Time-lapse":
