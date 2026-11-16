@@ -5,4 +5,3 @@ numpy>=1.26
 pandas>=2.2
 requests>=2.31
 reproject>=0.14
-reproject>=0.14
