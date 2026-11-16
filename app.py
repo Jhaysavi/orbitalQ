@@ -662,13 +662,8 @@ def show_packaged_examples():
         return
 
     with st.container(key="oq-targets", border=True):
-        extra_targets = ["Epsilon Indi B", "RW Aurigae", "R Draconis"]
-        options = list(cases) + [target for target in extra_targets if target not in cases]
-        name = st.selectbox("Target field", options,
-            format_func=lambda target: target + (" · ready to view" if target in cases else " · query NASA archive"))
-    if name not in cases:
-        render_catalog_target(name)
-        return
+        name = st.selectbox("Target field", list(cases),
+            format_func=lambda name: f"{name} · {len(cases[name]['frames'])} available visits")
     case = cases[name]
     frames = sorted(case["frames"], key=lambda item: item["mjd"])
     viewport, instrumentation = st.columns([3, 1.15], gap="medium")
@@ -699,68 +694,14 @@ def show_packaged_examples():
 
 @st.cache_data(ttl=900, show_spinner=False)
 def search_official_observations(ra, dec, releases):
-    return search_level2_footprints(
+    result = search_level2_footprints(
         SkyCoord(ra=ra * u.deg, dec=dec * u.deg, frame="icrs"),
-        ra, dec, radius_deg=0.01, max_results=8, releases=releases, timeout=8,
+        ra, dec, radius_deg=0.01, max_results=24, releases=releases, timeout=30,
     )
+    if not result.get("ok"):
+        raise RuntimeError("NASA/IPAC is temporarily unavailable. Retry or select a single release. Loaded images are retained.")
+    return result
 
-
-
-def render_catalog_target(name):
-    preset = TARGET_PRESETS[name]
-    ra, dec = preset["ra_deg"], preset["dec_deg"]
-    descriptions = {
-        "Epsilon Indi B": "A nearby brown-dwarf system: an infrared target for inspecting the field across observations.",
-        "RW Aurigae": "A young variable-star system: inspect brightness cautiously across compatible exposures.",
-        "R Draconis": "A pulsating variable star: a field for exploring changes in brightness over time.",
-    }
-    st.subheader(name)
-    st.write(descriptions[name])
-    st.caption(f"Reference field: RA {ra:.6f}°, Dec {dec:.6f}°. Coordinates are not propagated for proper motion.")
-    st.info("On-demand NASA/IPAC observations. Availability and target detection are not assumed.")
-    key = "catalog_frames_" + name
-    if st.button("Find and load official exposures", key="query_" + name, type="primary"):
-        st.session_state.pop(key, None)
-        with st.spinner("Querying NASA/IPAC IRSA and reading verified FITS cutouts…"):
-            try:
-                result = search_official_observations(ra, dec, ("DR1", "QR3"))
-                frames, errors, seen = [], [], set()
-                for candidate in result.get("matches", [])[:4]:
-                    url = candidate["source_url"]
-                    if url in seen:
-                        continue
-                    seen.add(url)
-                    try:
-                        frames.append(cached_remote_level2(LEVEL2_CACHE_VERSION, url, ra, dec, 71))
-                    except Exception as exc:
-                        errors.append(str(exc))
-                frames.sort(key=lambda frame: frame.mjd_obs if np.isfinite(frame.mjd_obs) else float("inf"))
-                st.session_state[key] = (frames, result, errors)
-            except Exception as exc:
-                st.error(f"Archive query unavailable: {exc}")
-    saved = st.session_state.get(key)
-    if not saved:
-        return
-    frames, result, errors = saved
-    st.caption(result.get("message", "Archive query complete."))
-    if not frames:
-        st.warning("No images could be verified and loaded in this bounded query. No substitute imagery is shown.")
-    else:
-        st.success(f"{len(frames)} official exposure(s) retrieved and checked for field coverage.")
-        index = st.selectbox("Observation", range(len(frames)),
-            format_func=lambda i: f"{frames[i].date_obs or 'Date unavailable'} · {frames[i].detector}",
-            key="visit_" + name)
-        frame = frames[index]
-        display_array(frame.image, name + " · " + (frame.date_obs or "Date unavailable"),
-                      percentiles=(2.0, 98.0), unit=frame.bunit)
-        st.link_button("Original NASA/IPAC FITS ↗", frame.source_url)
-        st.caption(f"OBSID: {frame.obsid} · Detector: {frame.detector} · Units: {frame.bunit}")
-        st.info("Native exposure grid; per-image display stretch. Changes between views can reflect wavelength, alignment, or calibration. Field coverage does not establish target detection.")
-    diagnostics = result.get("rejected", []) + errors
-    if diagnostics:
-        with st.expander("Archive diagnostics"):
-            for message in diagnostics:
-                st.text(message)
 
 
 def render_official_archive():
@@ -809,7 +750,7 @@ def render_official_archive():
         format_func=lambda i: f"{matches[i]['date_obs'] or 'Date unavailable'} · {matches[i]['release']} · {matches[i]['filename']}")
     item = matches[selected]
     st.link_button("Original NASA/IPAC FITS ↗", item["source_url"])
-    st.caption("Up to eight candidates checked; this is not a complete archive census.")
+    st.caption("Up to 24 candidates checked; this is not a complete archive census.")
     if st.button("Load this official image", type="primary"):
         st.session_state.pop("official_cutout", None)
         with st.spinner("Reading original FITS pixels…"):
@@ -1030,13 +971,56 @@ def render_fits_workspace():
 
             st.caption("You can also upload FITS files downloaded directly from the archive.")
 
+
+    with st.expander("Find more official visits for this field"):
+        st.caption("Search DR1 and QR3. Only successfully loaded exposures are added; existing images are retained.")
+        if st.button("Find and add available exposures"):
+            with st.spinner("Querying NASA/IPAC and verifying cutouts…"):
+                try:
+                    result = search_official_observations(float(ra), float(dec), ("DR1", "QR3"))
+                    existing = list(st.session_state.get("remote_frames", []))
+                    urls = {frame.source_url for frame in existing}
+                    identities = {(frame.obsid, frame.detector, frame.processing_version)
+                                  for frame in existing if frame.obsid}
+                    candidates = {item["source_url"]: item for item in result.get("matches", [])
+                                  if item["source_url"] not in urls}
+                    ordered = sorted(candidates.values(),
+                        key=lambda item: item["mjd_obs"] if np.isfinite(item["mjd_obs"]) else float("inf"))
+                    indices = np.linspace(0, len(ordered)-1, min(8,len(ordered)), dtype=int) if ordered else []
+                    added, failures = [], []
+                    for index in indices:
+                        item = ordered[int(index)]
+                        try:
+                            frame = cached_remote_level2(LEVEL2_CACHE_VERSION, item["source_url"], float(ra), float(dec), int(cutout_size))
+                            identity = (frame.obsid, frame.detector, frame.processing_version)
+                            if frame.obsid and identity in identities:
+                                continue
+                            if not np.isfinite(frame.image).any():
+                                continue
+                            added.append(frame)
+                            identities.add(identity)
+                        except Exception as exc:
+                            failures.append(f"{item['filename']}: {exc}")
+                    st.session_state["remote_frames"] = existing + added
+                    if added:
+                        st.success(f"Added {len(added)} verified exposure(s) to the comparison below.")
+                    else:
+                        st.info("No additional images could be loaded in this query.")
+                    st.caption("Bounded search: up to 24 candidates checked and eight new cutouts loaded. Distinct dates are not guaranteed.")
+                    if failures or result.get("rejected"):
+                        with st.expander("Query details"):
+                            for message in result.get("rejected", []) + failures:
+                                st.text(message)
+                except Exception as exc:
+                    st.warning(str(exc))
+
     workspace = st.container()
     st.subheader("Add your own observations")
     st.caption("Use Level 2 FITS files that cover the coordinates in Target coordinates.")
     with st.expander("Browse the public SPHEREx archive"):
         st.caption(
-            "The public S3 directory listing is used instead of the unavailable "
-            "coordinate-search service. Browse a bounded folder sample, then load "
+            "The public S3 listing is an alternative to coordinate search. "
+            "Browse a bounded folder sample, then load "
             "selected FITS files; only their own WCS can confirm target coverage."
         )
         release_name = st.selectbox(
