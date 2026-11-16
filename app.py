@@ -698,7 +698,7 @@ def show_packaged_examples():
         return
 
     with st.container(key="oq-targets", border=True):
-        name = st.selectbox("Target field", list(cases),
+        name = st.selectbox("Target field", list(cases), key="packaged_target",
             format_func=lambda name: f"{name} · {len(cases[name]['frames'])} available visits")
     case = cases[name]
     frames = sorted(case["frames"], key=lambda item: item["mjd"])
@@ -970,7 +970,30 @@ def render_spectral_preview():
         )
     render_wise_field_resources()
 
+def open_prepared_field(name):
+    st.session_state["packaged_target"] = name
+    st.session_state["explorer_view"] = "Ready-to-view examples"
+
+
 def render_fits_workspace():
+    with st.expander("Explore other ready-to-view fields", expanded=True):
+        try:
+            available = {case["name"]: case for case in read_packaged_observations()
+                         if len(case.get("frames", [])) >= 2}
+        except (OSError, ValueError):
+            available = {}
+        if available:
+            chosen = st.selectbox(
+                "Prepared observation sequence", list(available), key="fits_example_choice",
+                format_func=lambda name: f"{name} · {len(available[name]['frames'])} visits",
+            )
+            dates = sorted(frame["date"] for frame in available[chosen]["frames"])
+            st.caption(f"{dates[0][:10]} → {dates[-1][:10]}. Opens this field in Compare visits.")
+            st.button("Open this sequence →", on_click=open_prepared_field, args=(chosen,),
+                      type="primary", key="open_prepared_from_fits")
+        else:
+            st.caption("No prepared sequences are available.")
+
     with st.container(border=True):
         demo_copy, demo_action = st.columns([2, 1])
         with demo_copy:
