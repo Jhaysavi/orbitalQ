@@ -4,48 +4,179 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-    :root { color-scheme: dark; --ink: #f4efff; --muted: #b6aec9; --line: #3b3453; --amber: #ffc785; }
+    :root {
+        color-scheme: dark;
+        --ink: #f6f0ff;
+        --muted: #beb4d2;
+        --line: #3b3453;
+        --surface: #151221;
+        --panel: #1d182d;
+        --amber: #ffc785;
+        --lilac: #d1baff;
+    }
     * { box-sizing: border-box; }
     body { margin: 0; color: var(--ink); font: 14px/1.45 system-ui, sans-serif; }
-    main { overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: #151221; }
-    .readout, .controls, .timeline-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .35rem .9rem; }
-    .readout { padding: .65rem .9rem; }
-    .readout small, .timeline-header span { display: block; color: var(--muted); font: 600 .69rem/1.5 ui-monospace, monospace; }
-    .readout strong { font-size: .92rem; }
-    #elapsed { color: var(--amber); font: 600 .75rem/1.4 ui-monospace, monospace; }
-    .stage {
-        display: grid; place-items: center; overflow: hidden;
-        height: clamp(208px, 58vw, 318px);
-        border-block: 1px solid var(--line);
-        background: radial-gradient(ellipse, #1a1528 0%, #0b0913 76%);
+    main {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: linear-gradient(180deg, #181426 0%, #13101e 100%);
     }
-    .stage img { display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; min-height: 0; }
-    .timeline { padding: .65rem .9rem .7rem; }
+    .readout, .controls, .timeline-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: .35rem .8rem;
+    }
+    .readout {
+        padding: .6rem .9rem;
+        background: rgba(255, 255, 255, .02);
+    }
+    .readout small, .timeline-header span {
+        display: block;
+        color: var(--muted);
+        font: 600 .67rem/1.4 "IBM Plex Mono", ui-monospace, monospace;
+        letter-spacing: .06em;
+    }
+    .readout strong { font-size: .92rem; letter-spacing: -.01em; }
+    #elapsed {
+        color: var(--amber);
+        font: 650 .72rem/1.35 "IBM Plex Mono", ui-monospace, monospace;
+        background: rgba(255, 199, 133, .1);
+        border: 1px solid rgba(255, 199, 133, .28);
+        border-radius: 999px;
+        padding: .18rem .6rem;
+    }
+    .stage {
+        position: relative;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        height: clamp(190px, 46vw, 290px);
+        border-block: 1px solid var(--line);
+        background:
+            radial-gradient(circle at center, rgba(209, 186, 255, .09) 0%, transparent 58%),
+            radial-gradient(ellipse at center, #1b152b 0%, #090710 78%);
+    }
+    .stage::after {
+        content: "";
+        position: absolute;
+        inset: 8px;
+        border: 1px solid rgba(209, 186, 255, .1);
+        border-radius: 9px;
+        pointer-events: none;
+    }
+    .stage img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        image-rendering: pixelated;
+        min-height: 0;
+        transform-origin: center center;
+        transition: transform .18s ease-out;
+    }
+    .reticle {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity .15s ease;
+    }
+    .stage[data-reticle="true"] .reticle { opacity: 1; }
+    .reticle::before, .reticle::after {
+        content: "";
+        position: absolute;
+        background: rgba(255, 199, 133, .48);
+    }
+    .reticle::before { left: 50%; top: 0; bottom: 0; width: 1px; transform: translateX(-.5px); }
+    .reticle::after { top: 50%; left: 0; right: 0; height: 1px; transform: translateY(-.5px); }
+    .reticle-ring {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 34px;
+        height: 34px;
+        transform: translate(-50%, -50%);
+        border: 1px solid rgba(209, 186, 255, .72);
+        border-radius: 50%;
+        box-shadow: 0 0 0 1px rgba(13, 11, 21, .5);
+    }
+    .timeline { padding: .6rem .9rem .7rem; }
     .timeline-header { margin-bottom: .2rem; }
     .timeline-header strong { font-size: .86rem; }
     input { accent-color: var(--amber); cursor: pointer; }
-    #seek { width: 100%; margin: .18rem 0 .3rem; }
-    .dates { position: relative; display: flex; gap: .35rem; overflow: auto; scrollbar-width: thin; padding: 2px 2px 4px; }
+    #seek { width: 100%; margin: .15rem 0 .32rem; }
+    .dates {
+        position: relative;
+        display: flex;
+        gap: .35rem;
+        overflow: auto;
+        scrollbar-width: thin;
+        padding: 2px 2px 5px;
+    }
     button, select {
-        min-height: 32px; border: 1px solid var(--line); border-radius: 8px;
-        background: #201a30; color: var(--ink); padding: .2rem .6rem; font: inherit;
+        min-height: 32px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        color: var(--ink);
+        padding: .2rem .58rem;
+        font: inherit;
+        transition: border-color .15s ease, background-color .15s ease, color .15s ease;
     }
     button { cursor: pointer; }
-    button:hover:not(:disabled), .dates button[aria-current="true"] { border-color: var(--amber); color: var(--amber); }
-    button:disabled { color: var(--muted); opacity: .48; cursor: default; }
-    :focus-visible { outline: 2px solid #d1baff; outline-offset: 2px; }
-    .dates button { flex: none; font: 600 .72rem/1.3 ui-monospace, monospace; }
-    .controls { margin-top: .35rem; }
-    .transport, .speed, .loop { display: flex; align-items: center; gap: .35rem; }
-    .speed, .loop, a { color: var(--muted); font-size: .78rem; }
-    .loop input { width: 1rem; height: 1rem; margin: 0; }
-    a { text-underline-offset: .2em; }
-    a:hover { color: var(--ink); }
-    #play { min-width: 6.1rem; border-color: transparent; color: #20132a; background: linear-gradient(110deg, #ffc785, #e8b1ff); font-weight: 750; }
-    @media (max-width: 400px) {
-        .readout, .timeline { padding-inline: .55rem; }
-        .controls { justify-content: flex-start; }
-        #elapsed { font-size: .68rem; }
+    button:hover:not(:disabled),
+    select:hover {
+        border-color: var(--lilac);
+        background: #27203b;
+    }
+    .dates button[aria-current="true"] {
+        border-color: var(--amber);
+        color: var(--amber);
+        background: #2d2134;
+    }
+    button:disabled { color: var(--muted); opacity: .45; cursor: default; }
+    :focus-visible { outline: 2px solid var(--lilac); outline-offset: 2px; }
+    .dates button {
+        flex: none;
+        font: 600 .71rem/1.3 "IBM Plex Mono", ui-monospace, monospace;
+        border-radius: 999px;
+        padding: .18rem .68rem;
+    }
+    .controls {
+        margin-top: .38rem;
+        padding-top: .45rem;
+        border-top: 1px solid rgba(59, 52, 83, .65);
+    }
+    .transport, .speed, .zoom, .loop, .reticle-toggle {
+        display: flex;
+        align-items: center;
+        gap: .35rem;
+        white-space: nowrap;
+    }
+    .speed, .zoom, .loop, .reticle-toggle, a { color: var(--muted); font-size: .76rem; }
+    .loop input, .reticle-toggle input { width: .95rem; height: .95rem; margin: 0; }
+    a {
+        text-underline-offset: .2em;
+        color: var(--lilac);
+        font-weight: 500;
+        white-space: nowrap;
+    }
+    a:hover { color: var(--amber); }
+    #play {
+        min-width: 6rem;
+        border-color: transparent;
+        color: #1f1328;
+        background: linear-gradient(110deg, #ffc785, #e8b1ff);
+        font-weight: 750;
+    }
+    #play:hover { filter: brightness(1.06); }
+    @media (max-width: 480px) {
+        .readout, .timeline { padding-inline: .6rem; }
+        .controls { justify-content: flex-start; gap: .4rem .65rem; }
+        #elapsed { font-size: .67rem; }
     }
 </style>
 </head>
@@ -55,7 +186,10 @@
         <div><small>OBSERVATION DATE</small><strong id="date"></strong></div>
         <span id="elapsed"></span>
     </header>
-    <div class="stage"><img id="image" alt="SPHEREx infrared observation cutout"></div>
+    <div id="stage" class="stage" data-reticle="false">
+        <img id="image" alt="SPHEREx infrared observation cutout">
+        <div class="reticle" aria-hidden="true"><div class="reticle-ring"></div></div>
+    </div>
     <section class="timeline" aria-label="Observation timeline">
         <div class="timeline-header"><strong>Observation timeline</strong><span id="position"></span></div>
         <input id="seek" type="range" min="0" value="0" aria-label="Jump to a visit">
@@ -75,6 +209,15 @@
                     <option value="325">4×</option>
                 </select>
             </div>
+            <div class="zoom">
+                <label for="zoom">Zoom</label>
+                <select id="zoom" aria-label="Zoom level">
+                    <option value="1" selected>1×</option>
+                    <option value="2">2×</option>
+                    <option value="3">3×</option>
+                </select>
+            </div>
+            <label class="reticle-toggle"><input id="reticle" type="checkbox"> Crosshair</label>
             <label class="loop"><input id="loop" type="checkbox" checked> Loop</label>
             <a id="source" target="_blank" rel="noopener noreferrer" hidden>FITS source ↗</a>
         </div>
@@ -85,6 +228,7 @@
 const get = (id) => document.getElementById(id);
 const frames = JSON.parse(get("frames").textContent);
 const date = get("date");
+const stage = get("stage");
 const image = get("image");
 const elapsed = get("elapsed");
 const position = get("position");
@@ -92,6 +236,8 @@ const seek = get("seek");
 const dates = get("dates");
 const play = get("play");
 const speed = get("speed");
+const zoom = get("zoom");
+const reticle = get("reticle");
 const loop = get("loop");
 const previous = get("previous");
 const next = get("next");
@@ -180,6 +326,12 @@ speed.addEventListener("change", () => {
         pause();
         start();
     }
+});
+zoom.addEventListener("change", () => {
+    image.style.transform = "scale(" + Number(zoom.value) + ")";
+});
+reticle.addEventListener("change", () => {
+    stage.dataset.reticle = reticle.checked ? "true" : "false";
 });
 document.addEventListener("visibilitychange", () => {
     if (document.hidden) pause();
