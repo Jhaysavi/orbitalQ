@@ -212,7 +212,29 @@
                 linear-gradient(110deg, #231933, #161321);
     margin-bottom: 1rem;
 }
-.oq-workspace-heading { padding: .25rem 0 .4rem; }
+.oq-workspace-heading {
+    padding: clamp(1.25rem, 3vw, 2.4rem);
+    border: 1px solid #51405f; border-radius: 22px; margin: .4rem 0 .85rem;
+    background: radial-gradient(ellipse at 95% 0%, #65417a44, transparent 65%), #191321;
+}
+.oq-workspace-heading .oq-section-label { color: var(--oq-amber); margin-bottom: .7rem; }
+.st-key-explorer_view button {
+    min-height: 46px; padding: .65rem 1rem; border-radius: 12px;
+    border: 1px solid #594365; background: #21182d; color: #dacfe7;
+}
+.st-key-explorer_view button[aria-pressed="true"] {
+    background: #483045; color: #ffe0b5; border-color: #b98d69;
+}
+.st-key-explorer_view button:focus-visible { outline: 3px solid #ffc785; outline-offset: 3px; }
+.st-key-oq-advanced-settings, .st-key-oq-instrumentation {
+    background: linear-gradient(160deg,#251b30,#15111f);
+    border-radius: 18px; padding: 1.2rem;
+}
+.st-key-oq-advanced-settings [data-testid="stWidgetLabel"] p { color: #d1c4df; font-size: .85rem; }
+.st-key-oq-advanced-settings [data-testid="stSlider"] { padding-block: .4rem; }
+.st-key-oq-targets { border-radius: 16px; background: #1d1627; padding: 1rem 1.2rem; }
+[data-testid="stButtonGroup"] button { min-height: 40px; border-radius: 10px; }
+
 .oq-workspace-heading h1, .oq-about-intro h1 {
     color: var(--oq-ink);
     font-size: clamp(1.75rem, 3.4vw, 2.9rem);
