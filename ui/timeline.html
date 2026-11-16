@@ -23,7 +23,8 @@
     .timeline { padding: .65rem .9rem .7rem; }
     .timeline-header { margin-bottom: .2rem; }
     .timeline-header strong { font-size: .86rem; }
-    input { width: 100%; margin: .18rem 0 .3rem; accent-color: var(--amber); cursor: pointer; }
+    input { accent-color: var(--amber); cursor: pointer; }
+    #seek { width: 100%; margin: .18rem 0 .3rem; }
     .dates { position: relative; display: flex; gap: .35rem; overflow: auto; scrollbar-width: thin; padding: 2px 2px 4px; }
     button, select {
         min-height: 32px; border: 1px solid var(--line); border-radius: 8px;
@@ -35,8 +36,9 @@
     :focus-visible { outline: 2px solid #d1baff; outline-offset: 2px; }
     .dates button { flex: none; font: 600 .72rem/1.3 ui-monospace, monospace; }
     .controls { margin-top: .35rem; }
-    .transport, .speed { display: flex; align-items: center; gap: .35rem; }
-    .speed, a { color: var(--muted); font-size: .78rem; }
+    .transport, .speed, .loop { display: flex; align-items: center; gap: .35rem; }
+    .speed, .loop, a { color: var(--muted); font-size: .78rem; }
+    .loop input { width: 1rem; height: 1rem; margin: 0; }
     a { text-underline-offset: .2em; }
     a:hover { color: var(--ink); }
     #play { min-width: 6.1rem; border-color: transparent; color: #20132a; background: linear-gradient(110deg, #ffc785, #e8b1ff); font-weight: 750; }
@@ -73,6 +75,7 @@
                     <option value="325">4×</option>
                 </select>
             </div>
+            <label class="loop"><input id="loop" type="checkbox" checked> Loop</label>
             <a id="source" target="_blank" rel="noopener noreferrer" hidden>FITS source ↗</a>
         </div>
     </section>
@@ -89,6 +92,7 @@ const seek = get("seek");
 const dates = get("dates");
 const play = get("play");
 const speed = get("speed");
+const loop = get("loop");
 const previous = get("previous");
 const next = get("next");
 const source = get("source");
@@ -144,9 +148,13 @@ function pause() {
 function start() {
     play.textContent = "❚❚ Pause";
     timer = window.setInterval(() => {
-        index += 1;
+        if (index === last && !loop.checked) {
+            pause();
+            return;
+        }
+        index = (index + 1) % frames.length;
         show();
-        if (index === last) pause();
+        if (index === last && !loop.checked) pause();
     }, Number(speed.value));
 }
 

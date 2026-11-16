@@ -358,15 +358,15 @@ def render_target_controls(instruments):
     return target_name, ra, dec, target, cutout_size, display_percentiles
 
 
-for widget_key in ("target_preset", "custom_target_name", "object_name_input", "ra_input",
-                   "dec_input", "cutout_size", "display_low", "display_high"):
-    if widget_key in st.session_state:
-        # Keep instrument settings when their widgets are off-screen.
-        st.session_state[widget_key] = st.session_state[widget_key]
-
 if view in ("Real DR1 sky preview", "Compare Level 2 visits"):
     science_workspace, instruments = st.columns([3, 1.15], gap="medium")
     target_name, ra, dec, target, cutout_size, display_percentiles = render_target_controls(instruments)
+else:
+    # Keep instrument settings when their widgets are off-screen.
+    for widget_key in ("target_preset", "custom_target_name", "object_name_input", "ra_input",
+                       "dec_input", "cutout_size", "display_low", "display_high"):
+        if widget_key in st.session_state:
+            st.session_state[widget_key] = st.session_state[widget_key]
 
 
 @st.cache_resource(show_spinner="Connecting to the public SPHEREx DR1 cube…")
