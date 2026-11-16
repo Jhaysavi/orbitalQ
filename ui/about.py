@@ -16,21 +16,21 @@ WISEVIEW = "https://byw.tools/wiseview"
 
 def render_wise_field_resources():
     """Link to independent survey views for the WISE 0855 study field."""
-    with st.expander("Explore the WISE 0855 field in other surveys"):
+    with st.expander("Explore the WISE 0855 field in other U.S. surveys"):
         st.markdown(
             f"**Reference field:** RA and Dec in degrees: `{WISE_FIELD}`. "
-            "These links open external survey tools."
+            "Compare SPHEREx cutouts against independent U.S. optical and infrared archives."
         )
         optical, infrared = st.columns(2)
         with optical:
-            st.link_button("Open Pan-STARRS cutout", PANSTARRS_CUTOUT, use_container_width=True)
+            st.link_button("Open STScI Pan-STARRS cutout", PANSTARRS_CUTOUT, use_container_width=True)
             st.caption("Inspect the optical stack and individual filters from the STScI archive.")
         with infrared:
             st.link_button("Open WiseView", WISEVIEW, use_container_width=True)
             st.caption("Enter the reference coordinates above to explore infrared images across WISE epochs.")
         st.info(
-            "Start with surrounding stars as reference points. Wavelength, observing epoch "
-            "and image resolution can change a source’s appearance across surveys."
+            "Anchor on surrounding background stars first. Wavelength, observing epoch, "
+            "and spatial resolution all affect how a moving source appears across surveys."
         )
         st.markdown(
             "[Pan-STARRS service guide](https://outerspace.stsci.edu/pages/viewpage.action?pageId=398524447) · "
@@ -41,37 +41,53 @@ def render_wise_field_resources():
 def render_about():
     st.markdown("""
 <section class="oq-about-intro">
+  <p class="oq-section-label">NASA Space Apps 2026 · Planet X and SPHEREx</p>
   <h1>About the technology</h1>
-  <p>OrbitalQ brings NASA SPHEREx data products into an explorer for visual inspection of infrared observations.</p>
+  <p>OrbitalQ transforms NASA SPHEREx infrared exposures into an interactive time-domain workspace for inspecting sky motion and spectral context.</p>
 </section>
 """, unsafe_allow_html=True)
+
+    st.subheader("How to spot object motion")
+    st.markdown("""
+<ol class="oq-about-grid">
+  <li>
+    <span class="oq-section-label">01 · Anchor</span>
+    <h3>Use background stars</h3>
+    <p>Distant stars remain stationary across epochs. Nearby high-proper-motion or solar-system objects shift relative to those fixed anchors.</p>
+  </li>
+  <li>
+    <span class="oq-section-label">02 · Inspect</span>
+    <h3>Enable Crosshair &amp; Zoom</h3>
+    <p>Turn on <strong>Crosshair</strong> and switch to <strong>2× or 3× Zoom</strong> in the Time-lapse player to catch subtle pixel-level shifts between visits.</p>
+  </li>
+  <li>
+    <span class="oq-section-label">03 · Verify</span>
+    <h3>Check Swipe &amp; FITS metadata</h3>
+    <p>Drag <strong>Swipe</strong> or run <strong>Auto-Blink A/B</strong>, then confirm elapsed time, detector match, <strong>FLAGS</strong>, and <strong>VARIANCE</strong> before reporting a candidate.</p>
+  </li>
+</ol>
+""", unsafe_allow_html=True)
+
     st.subheader("Two views of the same sky")
     st.markdown("""
 | Data product | What the explorer displays |
 | --- | --- |
-| Level 2 Spectral Images | Individual exposures ordered by their FITS observation times. Used for viewing visits in sequence or comparing a pair. |
-| DR1 All-Sky Cube | A cutout at one of 102 nominal infrared wavelength channels in the built-in WISE 0855 field. |
+| Level 2 Spectral Images | Individual exposures ordered by their FITS observation times (`MJD-OBS`), used for Time-lapse, Swipe, and Blink comparisons. |
+| DR1 All-Sky Cube | A cutout across 102 nominal near-infrared wavelength channels in the built-in WISE 0855 reference field. |
 
 ### From sky coordinates to image pixels
 
-Level 2 FITS files contain an image and a World Coordinate System (WCS).
-OrbitalQ uses the WCS to locate the requested sky position and checks whether
-the file covers it. When present, the viewer reads the matching **FLAGS** and
-**VARIANCE** cutouts and records the original source, observation time, detector
-and processing version.
-
-### How to spot object motion
-
-- **Anchor on background stars:** Fixed stars stay in place across visits; a nearby high-proper-motion or solar-system target shifts relative to them.
-- **Use Time-lapse + Crosshair + Zoom:** Enable **Crosshair** and **2× / 3× Zoom** in the time-lapse player to spot small pixel-level displacements between epochs.
-- **Verify with Swipe and metadata:** Drag **Swipe** or run **Auto-Blink A/B**, then check elapsed time, detector compatibility, **FLAGS**, and **VARIANCE** before interpreting a shift.
+Level 2 FITS files include both science pixels and a World Coordinate System (WCS).
+OrbitalQ maps your target RA/Dec through the WCS to verify field coverage, extracts
+matching **FLAGS** and **VARIANCE** cutouts when available, and preserves full
+provenance (source URL, timestamp, detector, and processing version).
 
 ### What to check before measuring a change
 
-Check image registration, wavelength and detector compatibility, quality
-flags, uncertainty, and the effects of the point spread function and background.
-For a moving target, account for its reference epoch and propagate the coordinates
-to each observation date. A visible shift is a candidate for follow-up.
+Verify image registration, wavelength and detector compatibility, quality flags,
+measurement uncertainty, and point-spread-function or background effects. For a
+moving target, account for its reference epoch and propagate coordinates to each
+observation date.
 """)
     render_wise_field_resources()
 
@@ -79,8 +95,9 @@ to each observation date. A visible shift is a candidate for follow-up.
 def render_documentation():
     st.markdown("""
 <section class="oq-about-intro">
+  <p class="oq-section-label">Official U.S. Sources · Architecture · Roadmap</p>
   <h1>Documentation</h1>
-  <p>Official U.S. data sources, software architecture, and proposed plans for running and evaluating OrbitalQ.</p>
+  <p>Verified U.S. mission references, Streamlit application architecture, and evaluation plans for OrbitalQ.</p>
 </section>
 """, unsafe_allow_html=True)
 
@@ -102,38 +119,38 @@ def render_documentation():
 
 ### Application architecture (`app.py` entrypoint)
 
-- **Streamlit entrypoint (`app.py`):** Renders the `Home`, `Solution`, `Team`, `Documentation`, and `About` pages, manages target coordinates, and runs the comparison workspace.
+- **Streamlit entrypoint (`app.py`):** Renders `Home`, `Solution`, `Team`, `Documentation`, and `About`, manages target coordinates, and orchestrates the comparison workspace.
 - **Core science modules (`core/`):** Handles IRSA archive listing (`archive.py`), coordinate resolution (`coordinates.py`), Level 2 FITS/WCS cutouts (`fits_reader.py`), provenance export (`provenance.py`), and chronological/unit validation (`validation.py`).
 - **Interface components (`ui/`):** Provides the interactive `timeline.html` player (with **Zoom** and **Crosshair** motion aids), `swipe.html` A/B divider, `about.py`, `presentation.py`, and `explorer.css`.
 
-The app uses **Python and Streamlit** for the interface, **Astropy** for FITS
-and WCS handling, **NumPy and Matplotlib** for images, and **HTML, CSS, and
-JavaScript** for playback and comparison controls.
+The stack combines **Python and Streamlit** for the web interface, **Astropy** for FITS
+and WCS handling, **NumPy and Matplotlib** for image rendering, and **HTML, CSS, and
+JavaScript** for interactive playback and comparison controls.
 """)
 
     with business:
         st.markdown("""
-- OrbitalQ serves citizen scientists, educators and students exploring infrared observations.
-- Keep the public explorer, example sequences and source links free to access.
-- Seek support from education and citizen-science partners. Optional workshops could fund curriculum development and maintenance.
-- Budget for hosting, archive bandwidth, and maintenance of samples and source links.
+- OrbitalQ serves citizen scientists, educators, and students exploring infrared sky observations.
+- Keep the public explorer, example sequences, and official FITS source links free to access.
+- Partner with STEM education and citizen-science programs to fund curriculum guides and maintenance.
+- Budget for cloud hosting, archive bandwidth, and ongoing curation of verified target sequences.
 """)
 
     with sustainability:
         st.markdown("""
-- Use the existing packaged cutouts for the public demo and cache public archive reads to limit repeat fetches.
-- Keep FITS provenance and reproduction instructions with the project so another maintainer can verify the examples.
-- Monitor download failures and broken source links. The FITS workspace supports local uploads when remote archive access is unavailable.
-- Track hosting and data-transfer use before expanding the target catalogue.
+- Use packaged cutouts for the public demo and cache archive queries to minimize repeat fetches.
+- Keep FITS provenance and reproduction scripts alongside the codebase so maintainers can audit every example.
+- Monitor download failures and link health; the FITS workspace supports local uploads when remote archive access is unavailable.
+- Track hosting and data-transfer usage before expanding the pre-packaged target catalog.
 """)
 
     with delivery:
         st.markdown("""
 | Stage | Deliverable | Acceptance check |
 | --- | --- | --- |
-| Prototype | Packaged time-lapse, spectral preview and Level 2 FITS workspace | The examples open, dates follow the FITS metadata, and exposure links are available. |
-| Pilot | Guided sessions with students, educators and citizen-science users | Users complete the baseline tasks below and report where they get stuck. |
-| Next release | Improve onboarding and add targets with verified exposures | Each new sequence has dated frames, traceable FITS sources and documented coverage. |
+| Prototype | Packaged time-lapse (Zoom + Crosshair), spectral preview, and Level 2 FITS workspace | Examples load cleanly, dates match FITS metadata, and source links resolve. |
+| Pilot | Guided sessions with students, educators, and citizen-science reviewers | Participants complete baseline tasks and report usability friction points. |
+| Next release | Expanded verified target catalog with multi-epoch IRSA exposures | Each new sequence ships with dated frames, traceable FITS URLs, and WCS validation. |
 """)
 
     with evaluation:
@@ -153,9 +170,9 @@ JavaScript** for playback and comparison controls.
 
 The proposed engine would flag observations for human review and explain each
 flag in a candidate card. The card would show the direction and magnitude of
-the change, the supporting FITS exposures, measurement uncertainty, plausible
+the change, supporting FITS exposures, measurement uncertainty, plausible
 contamination or calibration effects, and any plausible catalogue counterpart.
-Each card would expose the rule thresholds and mark missing measurements.
+Each card would expose rule thresholds and mark missing measurements.
 
 | Evidence | What the prototype would evaluate |
 | --- | --- |
@@ -176,13 +193,13 @@ labelled dataset.
 
 Run this as a separate research module after candidate evidence has been
 computed. Given a fixed review budget, select a shortlist that balances
-scientific interest, data quality and diversity. A QUBO would combine
-candidate utility, pairwise similarity penalties and a penalty for departing
+scientific interest, data quality, and diversity. A QUBO would combine
+candidate utility, pairwise similarity penalties, and a penalty for departing
 from the requested shortlist size.
 
 Evaluate QAOA simulation or a quantum-inspired solver against classical
 greedy and simulated-annealing baselines on the same input sets. Record
-objective value, runtime, feasible shortlist rate and scaling as the candidate
+objective value, runtime, feasible shortlist rate, and scaling as the candidate
 pool grows. Use exact solutions on small instances to measure the gap from
 the optimum. Report optimization performance under the measured conditions.
 Claims about quantum advantage or discovery accuracy require separate evidence.
