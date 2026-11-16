@@ -11,6 +11,15 @@ def chronological(frames):
 
 def comparison_warning(first, second) -> str | None:
     """Return a reason to avoid scientific differencing, if metadata disagrees."""
+    unknown_metadata = {"", "unknown", "not in header", "none"}
+    for field in ("detector", "bunit", "release", "processing_version"):
+        if any(str(getattr(frame, field, "")).strip().lower() in unknown_metadata
+               for frame in (first, second)):
+            return f"{field} metadata is incomplete; compatibility cannot be established"
+    if not all(math.isfinite(frame.mjd_obs) for frame in (first, second)):
+        return "observation time is missing or invalid"
+    if first.mjd_obs == second.mjd_obs:
+        return "observations have the same timestamp; this is not a temporal comparison"
     if first.image.shape != second.image.shape:
         return f"cutout dimensions differ ({first.image.shape} vs {second.image.shape})"
     if first.detector != second.detector:
@@ -24,7 +33,7 @@ def comparison_warning(first, second) -> str | None:
             "processing versions differ "
             f"({first.processing_version} vs {second.processing_version})"
         )
-    unknown = {"", "unknown", "not in header", "WCS-WAVE table present (inspect per pixel)"}
+    unknown = {"", "unknown", "not in header", "WCS-WAVE table present (inspect per pixel)", "header wavelength range present"}
     if first.wavelength in unknown or second.wavelength in unknown:
         return "wavelength metadata is incomplete; inspect WCS-WAVE/bandpass before comparison"
     if first.wavelength != second.wavelength:
