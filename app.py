@@ -708,19 +708,27 @@ def show_packaged_examples():
             st.subheader("Observation guide")
             mode = st.segmented_control("Comparison mode", ["Time-lapse", "Swipe"], default="Time-lapse") or "Time-lapse"
             st.caption(f"{case['detector']} · {len(frames)} dated observations")
-            st.write(case["description"])
-            if case.get("processing_note"):
-                with st.expander("Processing and source details"):
-                    st.write(case["processing_note"])
-                    st.markdown("[SkyShift MIT license](https://github.com/SouBeatrizKaroline/NasaSpaceApp_OrbitalQ/blob/main/dist/licenses/skyshift.txt)")
+            observing_guides = {
+                "Epsilon Indi B": "Follow the field across four visits. Use surrounding stars as reference points and check the wavelength shown for each observation.",
+                "RW Aurigae": "Compare the region around this young star across three dates. Check the wavelength before interpreting differences in brightness.",
+                "R Draconis": "Explore three visits to the field around this variable star. Compare the target with nearby stars and inspect the original exposure.",
+            }
+            st.write(observing_guides.get(name, case["description"]))
+            st.link_button("NASA/IPAC original FITS ↗", frames[0]["fits"])
+            st.caption("Opens the first visit. Each timeline frame also links to its own exposure.")
+            if case.get("processing_note") or case.get("snapshot"):
+                with st.expander("Data sources and processing credits"):
+                    if case.get("processing_note"):
+                        st.write(case["description"])
+                        st.write(case["processing_note"])
+                    if case.get("snapshot"):
+                        st.markdown(f"[Processed image source — SkyShift]({case['snapshot']})")
+                    st.markdown("[Processing license and credits](https://github.com/SouBeatrizKaroline/NasaSpaceApp_OrbitalQ/blob/main/dist/licenses/skyshift.txt)")
                     st.dataframe(
                         [{"date": item["date"], "wavelength_um": item["wavelength"],
-                          "obsid": item.get("obsid", ""), "official_fits": item["fits"]}
-                         for item in frames],
+                          "official_fits": item["fits"]} for item in frames],
                         hide_index=True, use_container_width=True,
                     )
-            if case.get("snapshot"):
-                st.markdown(f"[Processed cutout provenance ↗]({case['snapshot']})")
     with viewport:
         if mode == "Time-lapse":
             display_time_lapse([
