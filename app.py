@@ -181,18 +181,72 @@ def render_home():
 
 def render_team():
     st.markdown("""
-<section class="oq-about-intro">
-  <h1>Meet the team</h1>
-  <p>We built OrbitalQ for Planet X and SPHEREx at the 2026 NASA Space Apps Challenge. Explore our portfolios and get in touch about the project.</p>
+<style>
+.oq-team-hero { position:relative; overflow:hidden; padding:clamp(1.6rem,5vw,3.5rem);
+    border:1px solid #514063; border-radius:24px; margin:.5rem 0 1.5rem;
+    background:radial-gradient(ellipse at 100% 0%,#51336788,transparent 60%),#191321; }
+.oq-team-hero:after { content:""; position:absolute; width:260px; height:260px;
+    border:1px solid #dac2ff22; border-radius:50%; right:-80px; top:-110px; pointer-events:none; }
+.oq-team-hero h1 { font-size:clamp(2.2rem,5vw,4rem); line-height:1.08;
+    letter-spacing:-.045em; color:#f6f0ff; padding:.6rem 0 .9rem; max-width:16ch; }
+.oq-team-hero h1 span { color:#ffc785; }
+.oq-team-hero p:last-child { color:#c9bfd9; max-width:62ch; line-height:1.7; margin:0; }
+.oq-team-members { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.25rem; }
+.oq-team-card { padding:clamp(1.25rem,3vw,2rem); border:1px solid #493953; border-radius:20px;
+    background:linear-gradient(145deg,#241b30,#15111f); min-width:0; display:flex; flex-direction:column; }
+.oq-team-card-heading { display:flex; align-items:center; gap:1rem; margin-bottom:1.4rem; }
+.oq-team-monogram { display:grid; place-items:center; flex:0 0 64px; height:64px; border-radius:20px;
+    background:linear-gradient(135deg,#dac2ff,#a582ca); color:#241431;
+    font-size:1.35rem; font-weight:800; box-shadow:0 8px 24px #05020c33; }
+.oq-team-card-jay .oq-team-monogram { background:linear-gradient(135deg,#ffdbad,#c79575); }
+.oq-team-card h2 { color:#f6f0ff; font-size:clamp(1.3rem,2.5vw,1.8rem); padding:0; letter-spacing:-.025em; }
+.oq-team-card .oq-team-label { margin:.25rem 0 0; color:#bfb1d0; font-size:.85rem; }
+.oq-team-card > p { color:#c9bfd9; line-height:1.65; margin:0 0 1.5rem; }
+.oq-team-links { display:flex; flex-wrap:wrap; gap:.65rem; margin-top:auto; }
+.oq-team-links a { display:inline-flex; align-items:center; justify-content:space-between; gap:.8rem;
+    min-height:44px; padding:.65rem 1rem; border:1px solid #6f587e; border-radius:12px;
+    color:#efe0ff !important; background:#332440; font-size:.9rem; font-weight:600; text-decoration:none; }
+.oq-team-links a:hover { background:#473056; border-color:#dac2ff; }
+.oq-team-links a:focus-visible { outline:3px solid #ffc785; outline-offset:4px; }
+.oq-team-note { display:flex; flex-wrap:wrap; justify-content:space-between; gap:.5rem 1rem;
+    margin:1.5rem 0 1rem; padding:1.2rem 0; border-top:1px solid #493953; color:#bfb1d0; font-size:.9rem; }
+@media(max-width:760px) { .oq-team-members { grid-template-columns:1fr; } }
+@media(max-width:420px) { .oq-team-links { flex-direction:column; } .oq-team-monogram { flex-basis:50px; height:50px; border-radius:15px; } }
+</style>
+<section class="oq-team-hero">
+  <p class="oq-section-label">The people behind OrbitalQ</p>
+  <h1>Curiosity brought<br>us <span>together.</span></h1>
+  <p>We built OrbitalQ for Planet X and SPHEREx at the 2026 NASA Space Apps Challenge. Meet the team and explore the work behind the names.</p>
 </section>
-""", unsafe_allow_html=True)
-    st.markdown("""
-<div class="oq-about-grid oq-about-pair">
-  <a href="https://aspiraqualquer.vercel.app/"><strong>Beatriz Karoline</strong><span>Aspira Qualquer · Portfolio ↗</span></a>
-  <a href="https://jhay.goskip.app/"><strong>Jay</strong><span>Visit portfolio ↗</span></a>
+<div class="oq-team-members">
+  <article class="oq-team-card" aria-labelledby="oq-team-aspira">
+    <div class="oq-team-card-heading">
+      <div class="oq-team-monogram" aria-hidden="true">AQ</div>
+      <div><h2 id="oq-team-aspira">Aspira Qualquer</h2><p class="oq-team-label">OrbitalQ team</p></div>
+    </div>
+    <p>Explore my projects, creative work, and the AspiraQualquer universe.</p>
+    <div class="oq-team-links">
+      <a href="https://soubeatrizkaroline.vercel.app/">Personal portfolio <span aria-hidden="true">↗</span></a>
+      <a href="https://aspiraqualquer.vercel.app/">AspiraQualquer <span aria-hidden="true">↗</span></a>
+    </div>
+  </article>
+  <article class="oq-team-card oq-team-card-jay" aria-labelledby="oq-team-jay">
+    <div class="oq-team-card-heading">
+      <div class="oq-team-monogram" aria-hidden="true">J</div>
+      <div><h2 id="oq-team-jay">Jay</h2><p class="oq-team-label">OrbitalQ team</p></div>
+    </div>
+    <p>Discover the projects and work behind my contribution to OrbitalQ.</p>
+    <div class="oq-team-links">
+      <a href="https://jhay.goskip.app/">Jay’s portfolio <span aria-hidden="true">↗</span></a>
+    </div>
+  </article>
+</div>
+<div class="oq-team-note">
+  <span>Built together for a changing sky.</span>
+  <span>NASA Space Apps Challenge 2026</span>
 </div>
 """, unsafe_allow_html=True)
-    st.link_button("View the GitHub repository ↗", REPO)
+    st.link_button("Explore OrbitalQ on GitHub ↗", REPO)
 
 
 def render_solution_navigation():
