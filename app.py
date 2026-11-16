@@ -224,10 +224,10 @@ def render_team():
       <div class="oq-team-monogram" aria-hidden="true">AQ</div>
       <div><h2 id="oq-team-aspira">Aspira Qualquer</h2><p class="oq-team-label">OrbitalQ team</p></div>
     </div>
-    <p>Explore my projects, creative work, and the AspiraQualquer universe.</p>
+    <p>Explore my personal projects and game development portfolio.</p>
     <div class="oq-team-links">
       <a href="https://soubeatrizkaroline.vercel.app/">Personal portfolio <span aria-hidden="true">↗</span></a>
-      <a href="https://aspiraqualquer.vercel.app/">AspiraQualquer <span aria-hidden="true">↗</span></a>
+      <a href="https://aspiraqualquer.vercel.app/">Game portfolio <span aria-hidden="true">↗</span></a>
     </div>
   </article>
   <article class="oq-team-card oq-team-card-jay" aria-labelledby="oq-team-jay">
