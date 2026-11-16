@@ -8,9 +8,12 @@
     --oq-mono: "IBM Plex Mono", Consolas, monospace;
 }
 .stApp {
-    background: radial-gradient(ellipse at 90% -10%, #2e204b 0%, transparent 48%), #0d0b15;
+    background:
+        radial-gradient(ellipse at 88% -8%, rgba(74, 46, 122, .45) 0%, transparent 48%),
+        radial-gradient(ellipse at 10% 35%, rgba(44, 30, 74, .28) 0%, transparent 42%),
+        #0d0b15;
 }
-[data-testid="stHeader"] { background: #0d0b15e8; }
+[data-testid="stHeader"] { background: #0d0b15e8; backdrop-filter: blur(8px); }
 .stMainBlockContainer, .block-container {
     max-width: 1390px;
     padding: 3rem clamp(1rem, 3.5vw, 3rem) 3rem;
@@ -19,17 +22,18 @@
     border: 1px solid #3b3453;
     border-radius: 18px;
     padding: .65rem clamp(.7rem, 2vw, 1.25rem);
-    margin-bottom: .65rem;
+    margin-bottom: .75rem;
     background: linear-gradient(135deg, #1b1628 0%, #151220 100%);
     box-shadow: 0 12px 30px rgba(6, 4, 14, .28);
 }
 .st-key-oq-nav-links button {
     min-height: 40px;
-    padding: .32rem .8rem;
+    padding: .32rem .85rem;
     border: 1px solid transparent;
     border-radius: 10px;
     white-space: nowrap;
     color: var(--oq-muted);
+    transition: border-color .15s ease, background-color .15s ease, color .15s ease;
 }
 .st-key-oq-nav-links button:hover,
 .st-key-oq-nav-links button:focus-visible {
@@ -41,29 +45,30 @@
     border-color: #8c674e;
     background: #392934;
     color: var(--oq-amber);
+    box-shadow: 0 0 0 1px rgba(255, 199, 133, .14);
 }
 .st-key-oq-nav-links button p { font-weight: 650; }
-.oq-brand { display: flex; align-items: center; gap: .55rem; }
+.oq-brand { display: flex; align-items: center; gap: .6rem; }
 .oq-brand img { width: 46px; height: 46px; object-fit: contain; }
-.oq-brand strong { color: var(--oq-ink); display: block; font-size: 1.16rem; line-height: 1.2; }
+.oq-brand strong { color: var(--oq-ink); display: block; font-size: 1.16rem; line-height: 1.2; letter-spacing: -.01em; }
 .oq-brand strong span { color: var(--oq-amber); }
 .oq-brand small { color: var(--oq-muted); font: .7rem/1.4 var(--oq-mono); }
 
-[data-testid="stRadio"] [role="radiogroup"] { gap: .4rem; flex-wrap: wrap; }
+[data-testid="stRadio"] [role="radiogroup"] { gap: .42rem; flex-wrap: wrap; }
 [data-testid="stRadio"] [role="radiogroup"] > label {
-    min-height: 2.25rem;
+    min-height: 2.3rem;
     border: 1px solid var(--oq-border);
     border-radius: 10px;
-    padding: .35rem .75rem;
+    padding: .36rem .78rem;
     margin: 0;
     background: var(--oq-surface);
-    transition: border-color .15s ease, background-color .15s ease, color .15s ease;
+    transition: border-color .15s ease, background-color .15s ease, color .15s ease, box-shadow .15s ease;
 }
 [data-testid="stRadio"] [role="radiogroup"] > label:has(input:checked) {
     border-color: #b0805e;
     background: #332432;
     color: var(--oq-amber);
-    box-shadow: 0 0 0 1px rgba(255, 199, 133, .18);
+    box-shadow: 0 0 0 1px rgba(255, 199, 133, .2);
 }
 [data-testid="stRadio"] [role="radiogroup"] > label:hover {
     border-color: var(--oq-lilac);
@@ -87,9 +92,10 @@
 .st-key-oq-landing {
     border: 1px solid var(--oq-border);
     border-radius: 24px;
-    padding: clamp(1.1rem, 4.6vw, 4rem);
+    padding: clamp(1.2rem, 4.6vw, 4rem);
     background: radial-gradient(ellipse at 90% 55%, #3a254f, transparent 60%),
                 linear-gradient(140deg, #1e162a, #12101e);
+    box-shadow: 0 22px 48px rgba(6, 4, 14, .35);
 }
 .oq-home-copy h1 {
     margin: .65rem 0 .95rem;
@@ -120,6 +126,7 @@
     border: 1px solid transparent;
     color: #21162a;
     font-weight: 750;
+    box-shadow: 0 6px 20px rgba(255, 199, 133, .18);
 }
 .st-key-oq-landing [data-testid="stBaseButton-primary"]:hover { filter: brightness(1.08); }
 .oq-how-link {
@@ -166,41 +173,44 @@
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
     align-items: center;
     gap: .6rem 1.5rem;
-    padding: 1.25rem 0;
+    padding: 1.35rem 0;
     border-bottom: 1px solid var(--oq-border);
 }
 .oq-home-context h2 { padding: 0; font-size: clamp(1.25rem, 3vw, 1.75rem); }
 .oq-home-context p { color: var(--oq-muted); margin: 0; }
-.oq-home-details { margin-top: .7rem; }
-.oq-home-details h2 { scroll-margin-top: 4rem; }
-.oq-home-details h2 { padding-bottom: .25rem; }
+.oq-home-details { margin-top: .8rem; }
+.oq-home-details h2 { scroll-margin-top: 4rem; padding-bottom: .25rem; }
 .oq-home-details > p { color: var(--oq-muted); margin-top: 0; }
 .oq-about-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: .8rem;
+    gap: .85rem;
     padding: 0 !important;
-    margin: .6rem 0 0;
+    margin: .65rem 0 1rem;
     list-style: none;
 }
 .oq-about-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .oq-about-grid > * {
     border: 1px solid var(--oq-border);
-    border-radius: 13px;
-    background: var(--oq-surface);
-    padding: 1rem;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #1b1628 0%, #151220 100%);
+    padding: 1.05rem;
+    transition: border-color .16s ease, transform .16s ease;
 }
-.oq-about-grid h3 { padding: .3rem 0; font-size: 1rem; }
-.oq-about-grid p { margin: 0; color: var(--oq-muted); }
+.oq-about-grid > *:hover { border-color: #5b4d78; }
+.oq-about-grid h3 { padding: .3rem 0; font-size: 1rem; color: var(--oq-ink); }
+.oq-about-grid p { margin: 0; color: var(--oq-muted); line-height: 1.55; }
 .oq-about-grid > a { display: grid; gap: .4rem; color: var(--oq-ink) !important; text-decoration: none; }
-.oq-about-grid > a:hover, .oq-about-grid > a:focus-visible { border-color: var(--oq-lilac); }
+.oq-about-grid > a:hover, .oq-about-grid > a:focus-visible { border-color: var(--oq-lilac); transform: translateY(-1px); }
 .oq-about-grid > a span { color: var(--oq-lilac); font-size: .85rem; }
 
 .oq-about-intro {
-    padding: clamp(1.1rem, 3.4vw, 2.4rem);
+    padding: clamp(1.2rem, 3.4vw, 2.4rem);
     border: 1px solid var(--oq-border);
-    border-radius: 16px;
-    background: linear-gradient(110deg, #231933, #161321);
+    border-radius: 18px;
+    background: radial-gradient(ellipse at 95% 20%, rgba(114, 72, 168, .22), transparent 55%),
+                linear-gradient(110deg, #231933, #161321);
+    margin-bottom: 1rem;
 }
 .oq-workspace-heading { padding-top: .25rem; }
 .oq-workspace-heading h1, .oq-about-intro h1 {
@@ -216,7 +226,7 @@
 .st-key-oq-instrumentation [data-testid="stWidgetLabel"] p {
     color: var(--oq-muted);
     font: .7rem/1.4 var(--oq-mono);
-    letter-spacing: .035em;
+    letter-spacing: .04em;
     text-transform: uppercase;
 }
 [data-testid="stVerticalBlockBorderWrapper"] > div:has(> .st-key-oq-targets),
@@ -228,7 +238,49 @@
 }
 [data-testid="stMetric"] { border: 1px solid var(--oq-border); border-radius: 10px; padding: .7rem; }
 [data-testid="stMetricValue"] { font: 650 clamp(.86rem, 1.7vw, 1.16rem)/1.4 var(--oq-mono); }
-[data-testid="stExpander"] details { border-color: var(--oq-border); border-radius: 12px; }
+[data-testid="stExpander"] details {
+    border-color: var(--oq-border);
+    border-radius: 14px;
+    background: var(--oq-surface);
+}
+[data-testid="stTabs"] [role="tablist"] {
+    gap: .35rem;
+    border-bottom: 1px solid var(--oq-border);
+    padding-bottom: .35rem;
+}
+[data-testid="stTabs"] button[role="tab"] {
+    border-radius: 9px;
+    padding: .4rem .8rem;
+    color: var(--oq-muted);
+    font-weight: 600;
+}
+[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+    background: #2b2138;
+    color: var(--oq-amber);
+}
+[data-testid="stMarkdownContainer"] table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--oq-border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--oq-surface);
+}
+[data-testid="stMarkdownContainer"] th {
+    background: rgba(209, 186, 255, .08);
+    color: var(--oq-ink);
+    font: 650 .76rem/1.4 var(--oq-mono);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding: .65rem .85rem;
+    border-bottom: 1px solid var(--oq-border);
+}
+[data-testid="stMarkdownContainer"] td {
+    padding: .65rem .85rem;
+    border-bottom: 1px solid rgba(59, 52, 83, .55);
+    color: var(--oq-muted);
+}
+[data-testid="stMarkdownContainer"] td a { color: var(--oq-lilac); }
 .oq-interval {
     display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: .55rem; margin: .1rem 0 .45rem;
@@ -242,9 +294,9 @@
     align-items: center;
     flex-wrap: wrap;
     gap: .4rem 1rem;
-    margin-top: 1rem;
+    margin-top: 1.4rem;
     border-top: 1px solid var(--oq-border);
-    padding-top: .8rem;
+    padding-top: .9rem;
     color: var(--oq-muted);
     font-size: .78rem;
 }
