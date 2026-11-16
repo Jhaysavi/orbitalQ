@@ -56,7 +56,6 @@ DEMO_RA = TARGET_PRESETS[EXAMPLE_TARGET]["ra_deg"]
 DEMO_DEC = TARGET_PRESETS[EXAMPLE_TARGET]["dec_deg"]
 
 
-@st.cache_data(ttl=86400, show_spinner=False)
 def resolve_object_name(name: str):
     """Resolve an object name through Astropy's configured name service."""
     try:
@@ -119,8 +118,7 @@ def launch_explorer():
 
 
 def render_site_navigation():
-    if "site_page" not in st.session_state:
-        st.session_state["site_page"] = SITE_PAGES.get(st.query_params.get("page"), "Home")
+    st.session_state["site_page"] = SITE_PAGES.get(st.query_params.get("page"), "Home")
     with st.container(key="oq-navigation"):
         brand, navigation = st.columns([1, 1.6], vertical_alignment="center")
         with brand:
@@ -361,7 +359,7 @@ def render_target_controls(instruments):
         default_ra = float(
             resolved_for_name["ra"]
             if resolved_for_name and resolved_for_name.get("ok")
-            else preset_values.get("ra_deg") or 133.795129
+            else preset_values.get("ra_deg") if preset_values.get("ra_deg") is not None else 133.795129
         )
         default_dec = float(
             resolved_for_name["dec"]
