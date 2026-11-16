@@ -67,6 +67,9 @@ button[role="tab"][aria-selected="true"] { background:#423044; color:#ffdaac; bo
 [role="tabpanel"] { padding-top:.5rem; }
 @media(max-width:900px) { .oq-info-grid.oq-info-three { grid-template-columns:1fr; } }
 @media(max-width:640px) { .oq-info-grid { grid-template-columns:1fr; } }
+.st-key-oq-doc-section button { min-height:46px; padding:.65rem 1rem; border-radius:12px; border:1px solid #594365; background:#21182d; color:#dacfe7; }
+.st-key-oq-doc-section button[aria-pressed="true"] { background:#483045; color:#ffe0b5; border-color:#b98d69; }
+.st-key-oq-doc-section button:focus-visible { outline:3px solid #ffc785; outline-offset:3px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -119,12 +122,13 @@ def render_documentation():
 </section>
 """, unsafe_allow_html=True)
 
-    references, business, sustainability, delivery, evaluation, research = st.tabs([
-        "References and tools", "Business model", "Sustainability", "Delivery plan",
-        "Success metrics", "Experimental roadmap",
-    ])
+    section = st.segmented_control(
+        "Documentation section",
+        ["Sources", "Business", "Sustainability", "Delivery", "Metrics", "Research"],
+        default="Sources", key="oq-doc-section",
+    ) or "Sources"
 
-    with references:
+    if section == "Sources":
         st.markdown(f"""
 <h2>Sources you can trace</h2>
 <div class="oq-info-grid">
@@ -153,44 +157,65 @@ def render_documentation():
                 f"[Read the MIT license]({REPO}/blob/main/dist/licenses/skyshift.txt)."
             )
 
-    with business:
+    if section == "Business":
         st.markdown("""
-- OrbitalQ serves citizen scientists, educators, and students exploring infrared sky observations.
-- Keep the public explorer, example sequences, and official FITS source links free to access.
-- Partner with STEM education and citizen-science programs to fund curriculum guides and maintenance.
-- Budget for cloud hosting, archive bandwidth, and ongoing curation of verified target sequences.
-""")
+<h2>Open exploration. A plan to sustain it.</h2>
+<p style="color:#c9bfd9;max-width:70ch;line-height:1.7">Proposed operating model · Designed around public access, education, and long-term maintenance.</p>
+<div class="oq-info-grid">
+<article class="oq-info-card"><span class="oq-info-tag">Who it serves</span><h3>Curiosity has many starting points</h3><p>Citizen scientists, educators, and students exploring real infrared observations.</p></article>
+<article class="oq-info-card"><span class="oq-info-tag">Public access</span><h3>Keep the doorway open</h3><p>Maintain free access to the public explorer, example sequences, and original FITS source links.</p></article>
+<article class="oq-info-card"><span class="oq-info-tag">Potential support</span><h3>Build with education partners</h3><p>Seek STEM and citizen-science partnerships to support learning materials and maintenance. Partnerships are a proposed route, not confirmed commitments.</p></article>
+<article class="oq-info-card"><span class="oq-info-tag">Operating costs</span><h3>Fund the work behind the images</h3><p>Plan for hosting, archive bandwidth, software maintenance, and curation of verified observation sequences.</p></article>
+</div>
+""", unsafe_allow_html=True)
 
-    with sustainability:
+    if section == "Sustainability":
         st.markdown("""
-- Use packaged cutouts for the public demo and cache archive queries to minimize repeat fetches.
-- Keep FITS provenance and reproduction scripts alongside the codebase so maintainers can audit every example.
-- Monitor download failures and link health; the FITS workspace supports local uploads when remote archive access is unavailable.
-- Track hosting and data-transfer usage before expanding the pre-packaged target catalog.
-""")
+<h2>Keep exploration dependable.</h2>
+<p style="color:#c9bfd9;max-width:70ch;line-height:1.7">Operational practices and planned improvements for a maintainable public tool.</p>
+<div class="oq-info-grid">
+<article class="oq-info-card"><span class="oq-info-tag">Efficient access</span><h3>Reuse what is already prepared</h3><p>Packaged examples and cached archive queries reduce repeated downloads and help the first exploration load quickly.</p></article>
+<article class="oq-info-card"><span class="oq-info-tag">Reproducibility</span><h3>Keep the trail back to the data</h3><p>Preserve FITS provenance and reproduction scripts so maintainers can audit each published example.</p></article>
+<article class="oq-info-card"><span class="oq-info-tag">Resilience</span><h3>Prepare for unavailable archives</h3><p>Retain packaged examples and local FITS uploads. Monitor failed downloads and broken source links as part of maintenance.</p></article>
+<article class="oq-info-card"><span class="oq-info-tag">Responsible growth</span><h3>Expand at a measured pace</h3><p>Track hosting and data-transfer usage before growing the packaged catalogue. New sequences need validation and documented provenance.</p></article>
+</div>
+""", unsafe_allow_html=True)
 
-    with delivery:
+    if section == "Delivery":
         st.markdown("""
-| Stage | Deliverable | Acceptance check |
-| --- | --- | --- |
-| Prototype | Packaged time-lapse (Zoom + Crosshair), spectral preview, and Level 2 FITS workspace | Examples load cleanly, dates match FITS metadata, and source links resolve. |
-| Pilot | Guided sessions with students, educators, and citizen-science reviewers | Participants complete baseline tasks and report usability friction points. |
-| Next release | Expanded verified target catalog with multi-epoch IRSA exposures | Each new sequence ships with dated frames, traceable FITS URLs, and WCS validation. |
-""")
+<h2>From working prototype to a useful learning tool.</h2>
+<p style="color:#c9bfd9;max-width:70ch;line-height:1.7">Delivery roadmap · Later stages are planned and depend on validation.</p>
+<div class="oq-info-grid">
+<article class="oq-info-card"><span class="oq-info-tag">01 / Prototype</span><h3>Make the first exploration work</h3><p>Packaged time-lapse, Zoom, Crosshair, spectral preview, and FITS workspace.<br><br><strong>Acceptance:</strong> Examples load, dates match FITS metadata, and source links resolve.</p></article>
+<article class="oq-info-card"><span class="oq-info-tag">02 / Planned pilot</span><h3>Learn from real sessions</h3><p>Guided exploration with students, educators, and citizen-science reviewers.<br><br><strong>Acceptance:</strong> Record task completion and identify usability problems.</p></article>
+<article class="oq-info-card"><span class="oq-info-tag">03 / Planned release</span><h3>Expand the verified catalogue</h3><p>Add multi-epoch IRSA sequences only after acquisition and validation.<br><br><strong>Acceptance:</strong> Every sequence includes dated frames, original FITS links, and WCS coverage checks.</p></article>
+</div>
+""", unsafe_allow_html=True)
 
-    with evaluation:
-        st.caption("Proposed pilot targets. These are evaluation criteria for a future pilot.")
+    if section == "Metrics":
         st.markdown("""
-| Measure | Proposed target | How to evaluate |
-| --- | --- | --- |
-| First exploration | At least 80% of 10 pilot users reach the second Barnard visit unaided within two minutes | Observe the task from the Home page and record completion time. |
-| Data comprehension | At least 80% correctly distinguish an observation date from a wavelength channel | Ask one question after the time-lapse and spectral exercises. |
-| Provenance | Every published example frame links to its original FITS exposure | Check each link and match its timestamp against the FITS header. |
-| Coverage handling | Every out-of-field FITS fixture is rejected | Run the WCS validation tests and confirm the user-facing message in the workspace. |
-""")
+<h2>Measure whether exploration becomes easier.</h2>
+<p style="color:#c9bfd9;max-width:70ch;line-height:1.7">Proposed pilot criteria · These are targets to evaluate, not achieved results.</p>
+<div class="oq-info-grid">
+<article class="oq-info-card"><span class="oq-info-tag">First exploration</span><h3>80% within two minutes</h3><p>Target: at least 8 of 10 pilot users reach the second Barnard visit unaided. Observe from the Home page and record completion time.</p></article>
+<article class="oq-info-card"><span class="oq-info-tag">Data comprehension</span><h3>80% distinguish time from wavelength</h3><p>Ask participants a question after the time-lapse and spectral exercises to evaluate their understanding.</p></article>
+<article class="oq-info-card"><span class="oq-info-tag">Provenance</span><h3>Every frame has a source</h3><p>Check that each published example links to its original FITS exposure and that its timestamp matches the header.</p></article>
+<article class="oq-info-card"><span class="oq-info-tag">Coverage handling</span><h3>Reject out-of-field fixtures</h3><p>Use WCS validation tests and inspect the user-facing message to confirm that fixtures outside the image footprint are rejected.</p></article>
+</div>
+""", unsafe_allow_html=True)
 
-    with research:
+    if section == "Research":
         st.markdown("""
+<h2>Research with evidence at its centre.</h2>
+<p style="color:#c9bfd9;max-width:70ch;line-height:1.7">Experimental roadmap · These approaches require implementation and evaluation before any performance claim.</p>
+<div class="oq-info-grid">
+<article class="oq-info-card"><span class="oq-info-tag">Candidate review</span><h3>Explain why a field was flagged</h3><p>A proposed evidence card would connect measured changes to observations, uncertainty, quality, and plausible alternative explanations.</p></article>
+<article class="oq-info-card"><span class="oq-info-tag">Optional optimization</span><h3>Prioritize a review shortlist</h3><p>Explore candidate diversity and scientific interest under a limited review budget. Compare against classical methods before drawing conclusions.</p></article>
+</div>
+""", unsafe_allow_html=True)
+
+        with st.expander("Candidate engine: evidence and evaluation", expanded=True):
+            st.markdown("""
 ### Evidence-first candidate engine
 
 The proposed engine would flag observations for human review and explain each
@@ -214,7 +239,9 @@ reviewer assessments. Any prioritization score represents review urgency.
 Training a general ranking model would require a larger representative
 labelled dataset.
 
-### Quantum research for shortlist selection
+""")
+        with st.expander("Optional quantum research: method and benchmarks"):
+            st.markdown("""
 
 Run this as a separate research module after candidate evidence has been
 computed. Given a fixed review budget, select a shortlist that balances
