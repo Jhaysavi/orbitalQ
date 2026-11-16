@@ -210,9 +210,8 @@ def _padded_data_size(header: fits.Header) -> int:
     for axis in range(1, naxis + 1):
         elements *= max(0, int(header.get(f"NAXIS{axis}", 0) or 0))
     bitpix = abs(int(header.get("BITPIX", 0) or 0))
-    raw_size = elements * bitpix // 8
-    raw_size += int(header.get("PCOUNT", 0) or 0)
-    raw_size += int(header.get("GCOUNT", 1) or 1) - 1
+    raw_size = (elements + int(header.get("PCOUNT", 0) or 0)) * bitpix // 8
+    raw_size *= int(header.get("GCOUNT", 1) or 1)
     return ((raw_size + 2879) // 2880) * 2880
 
 
@@ -224,13 +223,15 @@ def read_level2_headers(
     """Read primary and IMAGE headers without downloading FITS image arrays."""
     client = session or requests.Session()
     primary, primary_size = _read_header(client, url, timeout=timeout)
-    image, _ = _read_header(
-        client,
-        url,
-        primary_size + _padded_data_size(primary),
-        timeout=timeout,
-    )
-    return primary, image
+    offset = primary_size + _padded_data_size(primary)
+    for _ in range(32):
+        image, header_size = _read_header(client, url, offset, timeout=timeout)
+        if str(image.get("EXTNAME", "")).strip().upper() == "IMAGE":
+            if int(image.get("NAXIS", 0)) != 2:
+                raise ValueError("IMAGE extension must be two-dimensional")
+            return primary, image
+        offset += header_size + _padded_data_size(image)
+    raise ValueError("No IMAGE extension found within 32 extensions")
 
 
 def _candidate_from_headers(
