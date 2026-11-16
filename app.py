@@ -101,8 +101,9 @@ EXPLORER_VIEWS = {
 }
 
 
-def select_site_page():
-    page = st.session_state["site_page"].lower()
+def select_site_page(label):
+    st.session_state["site_page"] = label
+    page = label.lower()
     if page == "home":
         if "page" in st.query_params:
             del st.query_params["page"]
@@ -111,9 +112,8 @@ def select_site_page():
 
 
 def launch_explorer():
-    st.session_state["site_page"] = "Solution"
     st.session_state["explorer_view"] = "Ready-to-view examples"
-    select_site_page()
+    select_site_page("Solution")
 
 
 def render_site_navigation():
@@ -123,10 +123,15 @@ def render_site_navigation():
         brand, navigation = st.columns([1, 1.6], vertical_alignment="center")
         with brand:
             render_brand()
-        navigation.radio(
-            "Site navigation", list(SITE_PAGES.values()), horizontal=True,
-            label_visibility="collapsed", key="site_page", on_change=select_site_page,
-        )
+        with navigation, st.container(
+            key="oq-nav-links", horizontal=True, horizontal_alignment="right", gap="xxsmall",
+        ):
+            for slug, label in SITE_PAGES.items():
+                st.button(
+                    label, key=f"oq-nav-{slug}",
+                    type="primary" if st.session_state["site_page"] == label else "tertiary",
+                    on_click=select_site_page, args=(label,),
+                )
     return st.session_state["site_page"]
 
 

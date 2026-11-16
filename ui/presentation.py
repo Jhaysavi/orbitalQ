@@ -29,8 +29,8 @@ def read_assets():
 
 def render_brand():
     css, _, _, logo = read_assets()
+    st.html(f"<style>{css}</style>")
     st.markdown(f"""
-<style>{css}</style>
 <div class="oq-brand">
   <img src="data:image/png;base64,{logo}" width="46" height="46" alt="">
   <div><strong>Orbital<span>Q</span></strong><small>SPHEREx observation explorer</small></div>
